@@ -9,14 +9,35 @@ function Whiteboard() {
   const [squares, setSquares] = useState([]);
   const [circles, setCircles] = useState([]);
   const [ellipses, setEllipses] = useState([]); // Add a new state variable for ellipses
+  const [straightLines, setStraightLines] = useState([]); // Add a new state variable for straight lines
 
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
   const [drawingMode, setDrawingMode] = useState("freehand");
+  const [startPoint, setStartPoint] = useState(null);
 
   const handleMouseDown = event => {
     setDrawing(true);
-    if (drawingMode === "rectangle") {
+    if (drawingMode === "straightLine") {
+      const stage = stageRef.current;
+      const layer = stage.getLayer();
+      const pointerPosition = stage.getPointerPosition();
+      setStartPoint(pointerPosition);
+      const line = new Konva.Line({
+        points: [
+          pointerPosition.x,
+          pointerPosition.y,
+          pointerPosition.x,
+          pointerPosition.y,
+        ],
+        stroke: "black",
+        strokeWidth: 2,
+        lineCap: "round",
+        lineJoin: "round",
+      });
+      layer?.add(line);
+      setStraightLines([...straightLines, line]); // Create a new line and add it to the array
+    } else if (drawingMode === "rectangle") {
       const stage = stageRef.current;
       const layer = stage.getLayer();
       const pointerPosition = stage.getPointerPosition();
@@ -93,7 +114,22 @@ function Whiteboard() {
 
   const handleMouseMove = event => {
     if (drawing) {
-      if (drawingMode === "rectangle") {
+      if (drawingMode === "straightLine") {
+        const stage = stageRef.current;
+        const layer = stage?.getLayer();
+        const pointerPosition = stage.getPointerPosition();
+        const lastLine = straightLines[straightLines.length - 1]; // Get the last line in the array
+        const points = [
+          startPoint.x,
+          startPoint.y,
+          pointerPosition.x,
+          pointerPosition.y,
+        ];
+        lastLine.points(points);
+        layer?.batchDraw();
+        // replace last
+        setStraightLines(straightLines.concat());
+      } else if (drawingMode === "rectangle") {
         const stage = stageRef.current;
         const layer = stage?.getLayer();
         const pointerPosition = stage.getPointerPosition();
@@ -162,10 +198,15 @@ function Whiteboard() {
 
   const handleMouseUp = () => {
     setDrawing(false);
+    setStartPoint(null);
   };
 
   const handleLine = () => {
     setDrawingMode("freehand");
+  };
+
+  const handleStraightLine = () => {
+    setDrawingMode("straightLine");
   };
 
   const handleRectangle = () => {
@@ -195,6 +236,7 @@ function Whiteboard() {
     setCircles([]);
     setSquares([]);
     setEllipses([]);
+    setStraightLines([]);
   };
 
   console.log(drawing);
@@ -203,6 +245,7 @@ function Whiteboard() {
   console.log(circles);
   console.log(ellipses);
   console.log(squares);
+  console.log(straightLines);
 
   return (
     <div>
@@ -286,6 +329,18 @@ function Whiteboard() {
               />
             );
           })}
+          {straightLines.map((line, index) => {
+            return (
+              <Line
+                key={index}
+                points={line.points()}
+                stroke="black"
+                strokeWidth={2}
+                lineCap="round"
+                lineJoin="round"
+              />
+            );
+          })}
         </Layer>
       </Stage>
       <div className="p-10 flex gap-4 flex-wrap justify-center items-center">
@@ -294,6 +349,13 @@ function Whiteboard() {
           onClick={handleLine}
         >
           Line
+        </button>
+
+        <button
+          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
+          onClick={handleStraightLine}
+        >
+          Straight Line
         </button>
 
         <button
