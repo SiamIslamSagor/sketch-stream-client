@@ -6,6 +6,7 @@ function Whiteboard() {
   const [drawing, setDrawing] = useState(false);
   const [lines, setLines] = useState([]);
   const [rectangles, setRectangles] = useState([]);
+  const [squares, setSquares] = useState([]);
   const [circles, setCircles] = useState([]);
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -42,6 +43,21 @@ function Whiteboard() {
       });
       layer?.add(circle);
       setCircles([...circles, circle]);
+    } else if (drawingMode === "square") {
+      const stage = stageRef.current;
+      const layer = stage.getLayer();
+      const pointerPosition = stage.getPointerPosition();
+      const square = new Konva.Rect({
+        x: pointerPosition.x,
+        y: pointerPosition.y,
+        width: 0,
+        height: 0,
+        // fill: "green",
+        stroke: "black",
+        strokeWidth: 2,
+      });
+      layer?.add(square);
+      setSquares([...squares, square]);
     } else {
       const stage = stageRef.current;
       const layer = stage.getLayer();
@@ -84,6 +100,17 @@ function Whiteboard() {
         // replace last
         circles.splice(circles.length - 1, 1, lastCircle);
         setCircles(circles.concat());
+      } else if (drawingMode === "square") {
+        const stage = stageRef.current;
+        const layer = stage?.getLayer();
+        const pointerPosition = stage.getPointerPosition();
+        const lastSquare = squares[squares.length - 1];
+        lastSquare.width(pointerPosition.x - lastSquare.x());
+        lastSquare.height(lastSquare.width());
+        layer?.batchDraw();
+        // replace last
+        squares.splice(squares.length - 1, 1, lastSquare);
+        setSquares(squares.concat());
       } else {
         const stage = stageRef.current;
         const layer = stage?.getLayer();
@@ -116,6 +143,10 @@ function Whiteboard() {
     setDrawingMode("circle");
   };
 
+  const handleSquare = () => {
+    setDrawingMode("square");
+  };
+
   const handleSaveDrawing = () => {
     // save logics
   };
@@ -125,12 +156,14 @@ function Whiteboard() {
     setLines([]);
     setRectangles([]);
     setCircles([]);
+    setSquares([]);
   };
 
   console.log(drawing);
   console.log(lines);
   console.log(rectangles);
   console.log(circles);
+  console.log(squares);
 
   return (
     <div>
@@ -185,9 +218,23 @@ function Whiteboard() {
               />
             );
           })}
+          {squares.map((square, index) => {
+            return (
+              <Rect
+                key={index}
+                x={square.x()}
+                y={square.y()}
+                width={square.width()}
+                height={square.height()}
+                fill={square.fill()}
+                stroke={square.stroke()}
+                strokeWidth={square.strokeWidth()}
+              />
+            );
+          })}
         </Layer>
       </Stage>
-      <div className="p-10 flex flex-wrap justify-center items-center">
+      <div className="p-10 flex gap-4 flex-wrap justify-center items-center">
         <button
           className="px-4 py-2 rounded-md bg-purple-700 text-white mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[0.90] hover:scale-125"
           onClick={handleLine}
@@ -207,6 +254,13 @@ function Whiteboard() {
           onClick={handleCircle}
         >
           Circle
+        </button>
+
+        <button
+          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
+          onClick={handleSquare}
+        >
+          Square
         </button>
 
         <button
