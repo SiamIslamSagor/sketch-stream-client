@@ -1,6 +1,6 @@
 import Konva from "konva";
-import { useRef, useState } from "react";
-import { Circle, Ellipse, Layer, Line, Rect, Stage } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import { Circle, Ellipse, Layer, Line, Rect, Stage, Text } from "react-konva";
 
 function Whiteboard() {
   const [drawing, setDrawing] = useState(false);
@@ -11,14 +11,53 @@ function Whiteboard() {
   const [ellipses, setEllipses] = useState([]); // Add a new state variable for ellipses
   const [straightLines, setStraightLines] = useState([]); // Add a new state variable for straight lines
 
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  const [texts, setTexts] = useState([]); // State for text annotations
+
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
   const [drawingMode, setDrawingMode] = useState("freehand");
   const [startPoint, setStartPoint] = useState(null);
 
+  useEffect(() => {
+    const handleKeyDown = event => {
+      if (event.key === "Shift") {
+        setIsShiftPressed(true);
+      }
+    };
+
+    const handleKeyUp = event => {
+      if (event.key === "Shift") {
+        setIsShiftPressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
   const handleMouseDown = event => {
+    if (isShiftPressed) return; // Ignore drawing if Shift is pressed
+
     setDrawing(true);
-    if (drawingMode === "straightLine") {
+    if (drawingMode === "text") {
+      const stage = stageRef.current;
+      const pointerPosition = stage.getPointerPosition();
+      const newText = {
+        x: pointerPosition.x,
+        y: pointerPosition.y,
+        text: "Click to edit",
+        fontSize: 18,
+        draggable: true,
+      };
+      setTexts([...texts, newText]);
+    } else if (drawingMode === "straightLine") {
       const stage = stageRef.current;
       const layer = stage.getLayer();
       const pointerPosition = stage.getPointerPosition();
@@ -113,12 +152,14 @@ function Whiteboard() {
   };
 
   const handleMouseMove = event => {
+    if (!drawing || isShiftPressed) return; // Ignore drawing if not active or Shift is pressed
+
     if (drawing) {
       if (drawingMode === "straightLine") {
         const stage = stageRef.current;
         const layer = stage?.getLayer();
         const pointerPosition = stage.getPointerPosition();
-        const lastLine = straightLines[straightLines.length - 1]; // Get the last line in the array
+        const lastLine = straightLines[straightLines.length - 1];
         const points = [
           startPoint.x,
           startPoint.y,
@@ -230,13 +271,13 @@ function Whiteboard() {
   };
 
   const handleClearDrawing = () => {
-    // save logics
     setLines([]);
     setRectangles([]);
     setCircles([]);
     setSquares([]);
     setEllipses([]);
     setStraightLines([]);
+    setTexts([]); // Clear text annotations
   };
 
   console.log(drawing);
@@ -246,13 +287,14 @@ function Whiteboard() {
   console.log(ellipses);
   console.log(squares);
   console.log(straightLines);
+  console.log(texts);
 
   return (
     <div>
       <Stage
         ref={stageRef}
         width={window.innerWidth - 24}
-        height={window.innerHeight - 24}
+        height={window.innerHeight - 180}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -284,6 +326,22 @@ function Whiteboard() {
                 fill={rect.fill()}
                 stroke={rect.stroke()}
                 strokeWidth={rect.strokeWidth()}
+                draggable={isShiftPressed}
+                onDragEnd={e => {
+                  if (isShiftPressed) {
+                    console.log(
+                      "OLD POSITION:",
+                      rectangles[index].attrs.x,
+                      rectangles[index].attrs.y,
+                      "NEW POSITION:",
+                      e.target.x(),
+                      e.target.y()
+                    );
+
+                    rectangles[index].attrs.x = e.target.x();
+                    rectangles[index].attrs.y = e.target.y();
+                  }
+                }}
               />
             );
           })}
@@ -315,7 +373,6 @@ function Whiteboard() {
             );
           })}
           {ellipses.map((ellipse, index) => {
-            // Add a new mapping for ellipses
             return (
               <Ellipse
                 key={index}
@@ -341,6 +398,36 @@ function Whiteboard() {
               />
             );
           })}
+
+          {texts.map((text, index) => (
+            <Text
+              key={index}
+              x={text.x}
+              y={text.y}
+              text={text.text}
+              fontSize={text.fontSize}
+              fill="black"
+              draggable={isShiftPressed}
+              onDblClick={() => {
+                const newText = prompt("Edit text:", text.text);
+                if (newText !== null) {
+                  const updatedTexts = [...texts];
+                  updatedTexts[index] = { ...text, text: newText };
+                  setTexts(updatedTexts);
+                }
+              }}
+              onDragEnd={e => {
+                const updatedTexts = texts.slice();
+                updatedTexts[index] = {
+                  ...text,
+                  x: e.target.x(),
+                  y: e.target.y(),
+                };
+                setTexts(updatedTexts);
+                console.log(texts);
+              }}
+            />
+          ))}
         </Layer>
       </Stage>
       <div className="p-10 flex gap-4 flex-wrap justify-center items-center">
@@ -384,6 +471,13 @@ function Whiteboard() {
           onClick={handleSquare}
         >
           Square
+        </button>
+
+        <button
+          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
+          onClick={() => setDrawingMode("text")}
+        >
+          Text
         </button>
 
         <button
