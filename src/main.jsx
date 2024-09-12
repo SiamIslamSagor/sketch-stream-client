@@ -2,15 +2,15 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Whiteboard from "./components/specific/Whiteboard";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: (
       <div>
-        <h1 className="text-3xl text-blue-800 font-bold underline">
-          Hello world!
-        </h1>
+        {/* <h1 className=" ">Hello world!</h1> */}
+        <Whiteboard />
       </div>
     ),
   },
