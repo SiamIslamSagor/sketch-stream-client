@@ -1,6 +1,6 @@
 import Konva from "konva";
 import { useRef, useState } from "react";
-import { Circle, Layer, Line, Rect, Stage } from "react-konva";
+import { Circle, Ellipse, Layer, Line, Rect, Stage } from "react-konva";
 
 function Whiteboard() {
   const [drawing, setDrawing] = useState(false);
@@ -8,6 +8,8 @@ function Whiteboard() {
   const [rectangles, setRectangles] = useState([]);
   const [squares, setSquares] = useState([]);
   const [circles, setCircles] = useState([]);
+  const [ellipses, setEllipses] = useState([]); // Add a new state variable for ellipses
+
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
   const [drawingMode, setDrawingMode] = useState("freehand");
@@ -58,6 +60,21 @@ function Whiteboard() {
       });
       layer?.add(square);
       setSquares([...squares, square]);
+    } else if (drawingMode === "ellipse") {
+      // Add a new condition for ellipse
+      const stage = stageRef.current;
+      const layer = stage.getLayer();
+      const pointerPosition = stage.getPointerPosition();
+      const ellipse = new Konva.Ellipse({
+        x: pointerPosition.x,
+        y: pointerPosition.y,
+        radiusX: 0,
+        radiusY: 0,
+        stroke: "black",
+        strokeWidth: 2,
+      });
+      layer?.add(ellipse);
+      setEllipses([...ellipses, ellipse]);
     } else {
       const stage = stageRef.current;
       const layer = stage.getLayer();
@@ -111,6 +128,22 @@ function Whiteboard() {
         // replace last
         squares.splice(squares.length - 1, 1, lastSquare);
         setSquares(squares.concat());
+      } else if (drawingMode === "ellipse") {
+        // Add a new condition for ellipse
+        const stage = stageRef.current;
+        const layer = stage?.getLayer();
+        const pointerPosition = stage.getPointerPosition();
+        const lastEllipse = ellipses[ellipses.length - 1];
+        const dx = pointerPosition.x - lastEllipse.x();
+        const dy = pointerPosition.y - lastEllipse.y();
+        const radiusX = Math.abs(dx);
+        const radiusY = Math.abs(dy);
+        lastEllipse.radiusX(radiusX);
+        lastEllipse.radiusY(radiusY);
+        layer?.batchDraw();
+        // replace last
+        ellipses.splice(ellipses.length - 1, 1, lastEllipse);
+        setEllipses(ellipses.concat());
       } else {
         const stage = stageRef.current;
         const layer = stage?.getLayer();
@@ -143,6 +176,10 @@ function Whiteboard() {
     setDrawingMode("circle");
   };
 
+  const handleEllipse = () => {
+    setDrawingMode("ellipse");
+  };
+
   const handleSquare = () => {
     setDrawingMode("square");
   };
@@ -157,12 +194,14 @@ function Whiteboard() {
     setRectangles([]);
     setCircles([]);
     setSquares([]);
+    setEllipses([]);
   };
 
   console.log(drawing);
   console.log(lines);
   console.log(rectangles);
   console.log(circles);
+  console.log(ellipses);
   console.log(squares);
 
   return (
@@ -232,6 +271,21 @@ function Whiteboard() {
               />
             );
           })}
+          {ellipses.map((ellipse, index) => {
+            // Add a new mapping for ellipses
+            return (
+              <Ellipse
+                key={index}
+                x={ellipse.x()}
+                y={ellipse.y()}
+                radiusX={ellipse.radiusX()}
+                radiusY={ellipse.radiusY()}
+                fill={ellipse.fill()}
+                stroke={ellipse.stroke()}
+                strokeWidth={ellipse.strokeWidth()}
+              />
+            );
+          })}
         </Layer>
       </Stage>
       <div className="p-10 flex gap-4 flex-wrap justify-center items-center">
@@ -254,6 +308,13 @@ function Whiteboard() {
           onClick={handleCircle}
         >
           Circle
+        </button>
+
+        <button
+          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
+          onClick={handleEllipse}
+        >
+          Ellipse
         </button>
 
         <button
