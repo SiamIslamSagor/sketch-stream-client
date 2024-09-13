@@ -43,7 +43,7 @@ function Whiteboard() {
   }, []);
 
   const handleMouseDown = event => {
-    if (isShiftPressed) return; // Ignore drawing if Shift is pressed
+    if (isShiftPressed || drawingMode === "drag") return; // Ignore drawing if Shift is pressed or drawing mode is drag
 
     setDrawing(true);
     if (drawingMode === "text") {
@@ -237,6 +237,39 @@ function Whiteboard() {
     }
   };
 
+  const handleDragStart = shape => {
+    // Store the original position
+    shape.attrs.originalX = shape.attrs.x;
+    shape.attrs.originalY = shape.attrs.y;
+  };
+
+  const handleDragMove = (shape, e) => {
+    if (isShiftPressed) {
+      console.log("NEW POSITION:", e.target.x(), e.target.y());
+
+      shape.attrs.x = e.target.x();
+      shape.attrs.y = e.target.y();
+    }
+  };
+
+  const handleDragEnd = (shape, e) => {
+    if (!isShiftPressed) {
+      // Revert to the original position
+      e.target.x(shape.attrs.originalX);
+      e.target.y(shape.attrs.originalY);
+
+      // Update state to trigger re-render
+      shape.attrs.x = shape.attrs.originalX;
+      shape.attrs.y = shape.attrs.originalY;
+
+      console.warn("Reverted to original position!");
+    } else {
+      // Update the shapes's position to the new one
+      shape.attrs.x = e.target.x();
+      shape.attrs.y = e.target.y();
+    }
+  };
+
   const handleMouseUp = () => {
     setDrawing(false);
     setStartPoint(null);
@@ -277,7 +310,7 @@ function Whiteboard() {
     setSquares([]);
     setEllipses([]);
     setStraightLines([]);
-    setTexts([]); // Clear text annotations
+    setTexts([]);
   };
 
   console.log(drawing);
@@ -312,9 +345,11 @@ function Whiteboard() {
                 strokeWidth={2}
                 lineCap="round"
                 lineJoin="round"
+                draggable={false}
               />
             );
           })}
+
           {rectangles.map((rect, index) => {
             return (
               <Rect
@@ -326,22 +361,10 @@ function Whiteboard() {
                 fill={rect.fill()}
                 stroke={rect.stroke()}
                 strokeWidth={rect.strokeWidth()}
-                draggable={isShiftPressed}
-                onDragEnd={e => {
-                  if (isShiftPressed) {
-                    console.log(
-                      "OLD POSITION:",
-                      rectangles[index].attrs.x,
-                      rectangles[index].attrs.y,
-                      "NEW POSITION:",
-                      e.target.x(),
-                      e.target.y()
-                    );
-
-                    rectangles[index].attrs.x = e.target.x();
-                    rectangles[index].attrs.y = e.target.y();
-                  }
-                }}
+                draggable={drawingMode === "drag"}
+                onDragStart={() => handleDragStart(rect)}
+                onDragMove={e => handleDragMove(rect, e)}
+                onDragEnd={e => handleDragEnd(rect, e)}
               />
             );
           })}
@@ -355,6 +378,10 @@ function Whiteboard() {
                 fill={circle.fill()}
                 stroke={circle.stroke()}
                 strokeWidth={circle.strokeWidth()}
+                draggable={drawingMode === "drag"}
+                onDragStart={() => handleDragStart(circle)}
+                onDragMove={e => handleDragMove(circle, e)}
+                onDragEnd={e => handleDragEnd(circle, e)}
               />
             );
           })}
@@ -369,6 +396,10 @@ function Whiteboard() {
                 fill={square.fill()}
                 stroke={square.stroke()}
                 strokeWidth={square.strokeWidth()}
+                draggable={drawingMode === "drag"}
+                onDragStart={() => handleDragStart(square)}
+                onDragMove={e => handleDragMove(square, e)}
+                onDragEnd={e => handleDragEnd(square, e)}
               />
             );
           })}
@@ -383,6 +414,10 @@ function Whiteboard() {
                 fill={ellipse.fill()}
                 stroke={ellipse.stroke()}
                 strokeWidth={ellipse.strokeWidth()}
+                draggable={drawingMode === "drag"}
+                onDragStart={() => handleDragStart(ellipse)}
+                onDragMove={e => handleDragMove(ellipse, e)}
+                onDragEnd={e => handleDragEnd(ellipse, e)}
               />
             );
           })}
@@ -395,6 +430,7 @@ function Whiteboard() {
                 strokeWidth={2}
                 lineCap="round"
                 lineJoin="round"
+                draggable={false}
               />
             );
           })}
@@ -471,6 +507,13 @@ function Whiteboard() {
           onClick={handleSquare}
         >
           Square
+        </button>
+
+        <button
+          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
+          onClick={() => setDrawingMode("drag")}
+        >
+          Drag
         </button>
 
         <button
