@@ -427,7 +427,7 @@ function Whiteboard() {
               fill="black"
               draggable={isShiftPressed}
               onDblClick={() => handleUpdateText(text, index)}
-              // onDblTap={() => handleUpdateText(text, index)}
+              onDblTap={() => handleUpdateText(text, index)}
               onDragEnd={e => {
                 const updatedTexts = texts.slice();
                 updatedTexts[index] = {
