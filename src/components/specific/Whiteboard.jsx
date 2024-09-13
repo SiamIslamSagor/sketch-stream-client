@@ -240,6 +240,15 @@ function Whiteboard() {
     }
   };
 
+  const handleUpdateText = (text, index) => {
+    const newText = prompt("Edit text:", text.text);
+    if (newText !== null) {
+      const updatedTexts = [...texts];
+      updatedTexts[index] = { ...text, text: newText };
+      setTexts(updatedTexts);
+    }
+  };
+
   const handleMouseUp = () => {
     setDrawing(false);
     setStartPoint(null);
@@ -417,14 +426,8 @@ function Whiteboard() {
               fontSize={text.fontSize}
               fill="black"
               draggable={isShiftPressed}
-              onDblClick={() => {
-                const newText = prompt("Edit text:", text.text);
-                if (newText !== null) {
-                  const updatedTexts = [...texts];
-                  updatedTexts[index] = { ...text, text: newText };
-                  setTexts(updatedTexts);
-                }
-              }}
+              onDblClick={() => handleUpdateText(text, index)}
+              onDblTap={() => handleUpdateText(text, index)}
               onDragEnd={e => {
                 const updatedTexts = texts.slice();
                 updatedTexts[index] = {
