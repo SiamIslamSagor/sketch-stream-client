@@ -42,13 +42,15 @@ function Whiteboard() {
     };
   }, []);
 
-  const handleMouseDown = event => {
+  const handleMouseDown = () => {
     if (isShiftPressed || drawingMode === "drag") return; // Ignore drawing if Shift is pressed or drawing mode is drag
+
+    const stage = stageRef.current;
+    const pointerPosition = stage.getPointerPosition();
+    const layer = stage.getLayer();
 
     setDrawing(true);
     if (drawingMode === "text") {
-      const stage = stageRef.current;
-      const pointerPosition = stage.getPointerPosition();
       const newText = {
         x: pointerPosition.x,
         y: pointerPosition.y,
@@ -58,9 +60,6 @@ function Whiteboard() {
       };
       setTexts([...texts, newText]);
     } else if (drawingMode === "straightLine") {
-      const stage = stageRef.current;
-      const layer = stage.getLayer();
-      const pointerPosition = stage.getPointerPosition();
       setStartPoint(pointerPosition);
       const line = new Konva.Line({
         points: [
@@ -77,9 +76,6 @@ function Whiteboard() {
       layer?.add(line);
       setStraightLines([...straightLines, line]); // Create a new line and add it to the array
     } else if (drawingMode === "rectangle") {
-      const stage = stageRef.current;
-      const layer = stage.getLayer();
-      const pointerPosition = stage.getPointerPosition();
       const rect = new Konva.Rect({
         x: pointerPosition.x,
         y: pointerPosition.y,
@@ -92,9 +88,6 @@ function Whiteboard() {
       layer?.add(rect);
       setRectangles([...rectangles, rect]);
     } else if (drawingMode === "circle") {
-      const stage = stageRef.current;
-      const layer = stage.getLayer();
-      const pointerPosition = stage.getPointerPosition();
       const circle = new Konva.Circle({
         x: pointerPosition.x,
         y: pointerPosition.y,
@@ -106,9 +99,6 @@ function Whiteboard() {
       layer?.add(circle);
       setCircles([...circles, circle]);
     } else if (drawingMode === "square") {
-      const stage = stageRef.current;
-      const layer = stage.getLayer();
-      const pointerPosition = stage.getPointerPosition();
       const square = new Konva.Rect({
         x: pointerPosition.x,
         y: pointerPosition.y,
@@ -121,10 +111,6 @@ function Whiteboard() {
       layer?.add(square);
       setSquares([...squares, square]);
     } else if (drawingMode === "ellipse") {
-      // Add a new condition for ellipse
-      const stage = stageRef.current;
-      const layer = stage.getLayer();
-      const pointerPosition = stage.getPointerPosition();
       const ellipse = new Konva.Ellipse({
         x: pointerPosition.x,
         y: pointerPosition.y,
@@ -136,9 +122,6 @@ function Whiteboard() {
       layer?.add(ellipse);
       setEllipses([...ellipses, ellipse]);
     } else {
-      const stage = stageRef.current;
-      const layer = stage.getLayer();
-      const pointerPosition = stage.getPointerPosition();
       const line = new Konva.Line({
         points: [pointerPosition.x, pointerPosition.y],
         stroke: "black",
@@ -151,14 +134,15 @@ function Whiteboard() {
     }
   };
 
-  const handleMouseMove = event => {
+  const handleMouseMove = () => {
     if (!drawing || isShiftPressed) return; // Ignore drawing if not active or Shift is pressed
+
+    const stage = stageRef.current;
+    const layer = stage?.getLayer();
+    const pointerPosition = stage.getPointerPosition();
 
     if (drawing) {
       if (drawingMode === "straightLine") {
-        const stage = stageRef.current;
-        const layer = stage?.getLayer();
-        const pointerPosition = stage.getPointerPosition();
         const lastLine = straightLines[straightLines.length - 1];
         const points = [
           startPoint.x,
@@ -171,9 +155,6 @@ function Whiteboard() {
         // replace last
         setStraightLines(straightLines.concat());
       } else if (drawingMode === "rectangle") {
-        const stage = stageRef.current;
-        const layer = stage?.getLayer();
-        const pointerPosition = stage.getPointerPosition();
         const lastRect = rectangles[rectangles.length - 1];
         lastRect.width(pointerPosition.x - lastRect.x());
         lastRect.height(pointerPosition.y - lastRect.y());
@@ -182,9 +163,6 @@ function Whiteboard() {
         rectangles.splice(rectangles.length - 1, 1, lastRect);
         setRectangles(rectangles.concat());
       } else if (drawingMode === "circle") {
-        const stage = stageRef.current;
-        const layer = stage?.getLayer();
-        const pointerPosition = stage.getPointerPosition();
         const lastCircle = circles[circles.length - 1];
         const dx = pointerPosition.x - lastCircle.x();
         const dy = pointerPosition.y - lastCircle.y();
@@ -195,9 +173,6 @@ function Whiteboard() {
         circles.splice(circles.length - 1, 1, lastCircle);
         setCircles(circles.concat());
       } else if (drawingMode === "square") {
-        const stage = stageRef.current;
-        const layer = stage?.getLayer();
-        const pointerPosition = stage.getPointerPosition();
         const lastSquare = squares[squares.length - 1];
         lastSquare.width(pointerPosition.x - lastSquare.x());
         lastSquare.height(lastSquare.width());
@@ -207,9 +182,7 @@ function Whiteboard() {
         setSquares(squares.concat());
       } else if (drawingMode === "ellipse") {
         // Add a new condition for ellipse
-        const stage = stageRef.current;
-        const layer = stage?.getLayer();
-        const pointerPosition = stage.getPointerPosition();
+
         const lastEllipse = ellipses[ellipses.length - 1];
         const dx = pointerPosition.x - lastEllipse.x();
         const dy = pointerPosition.y - lastEllipse.y();
@@ -222,9 +195,6 @@ function Whiteboard() {
         ellipses.splice(ellipses.length - 1, 1, lastEllipse);
         setEllipses(ellipses.concat());
       } else {
-        const stage = stageRef.current;
-        const layer = stage?.getLayer();
-        const pointerPosition = stage.getPointerPosition();
         const lastLine = lines[lines.length - 1];
         lastLine.points(
           lastLine.points().concat([pointerPosition.x, pointerPosition.y])
@@ -342,7 +312,7 @@ function Whiteboard() {
                 key={index}
                 points={line.points()}
                 stroke="black"
-                strokeWidth={2}
+                strokeWidth={line.strokeWidth()}
                 lineCap="round"
                 lineJoin="round"
                 draggable={false}
@@ -427,7 +397,7 @@ function Whiteboard() {
                 key={index}
                 points={line.points()}
                 stroke="black"
-                strokeWidth={2}
+                strokeWidth={line.strokeWidth()}
                 lineCap="round"
                 lineJoin="round"
                 draggable={false}
