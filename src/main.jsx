@@ -4,14 +4,18 @@ import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Whiteboard from "./components/specific/Whiteboard";
 import { NextUIProvider } from "@nextui-org/react";
+import AuthForm from "./components/auth/AuthForm";
+import { Toaster } from "react-hot-toast";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: (
       <div>
+        <Toaster />
         {/* <h1 className=" ">Hello world!</h1> */}
-        <Whiteboard />
+        {/* <Whiteboard /> */}
+        <AuthForm />
       </div>
     ),
   },
