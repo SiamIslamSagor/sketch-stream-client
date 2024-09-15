@@ -1,8 +1,25 @@
+import { activeToolClass, toolClass } from "@/constant/constant";
+import { Tooltip } from "@nextui-org/react";
+import {
+  IconAlphabetLatin,
+  IconCircle,
+  IconDeviceFloppy,
+  IconHandGrab,
+  IconMenu,
+  IconPencilMinus,
+  IconRectangle,
+  IconSignature,
+  IconSquare,
+  IconSquareRoundedX,
+} from "@tabler/icons-react";
 import Konva from "konva";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Circle, Ellipse, Layer, Line, Rect, Stage, Text } from "react-konva";
 
 function Whiteboard() {
+  const [deviceSize, setDeviceSize] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
   const [drawing, setDrawing] = useState(false);
   const [lines, setLines] = useState([]);
   const [rectangles, setRectangles] = useState([]);
@@ -42,6 +59,32 @@ function Whiteboard() {
     };
   }, []);
 
+  const handleResize = useCallback(() => {
+    const width = window.innerWidth;
+
+    if (width >= 1280) {
+      setDeviceSize("xl");
+    } else if (width >= 1024) {
+      setDeviceSize("lg");
+    } else if (width >= 768) {
+      setDeviceSize("md");
+    } else if (width >= 640) {
+      setDeviceSize("sm");
+    } else {
+      setDeviceSize("max-sm");
+    }
+  }, []);
+
+  // side effect
+  useEffect(() => {
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [handleResize]);
+
   const handleMouseDown = () => {
     if (isShiftPressed || drawingMode === "drag") return; // Ignore drawing if Shift is pressed or drawing mode is drag
 
@@ -54,7 +97,7 @@ function Whiteboard() {
       const newText = {
         x: pointerPosition.x,
         y: pointerPosition.y,
-        text: "Click to edit",
+        text: "Double Click to edit",
         fontSize: 18,
         draggable: true,
       };
@@ -121,7 +164,7 @@ function Whiteboard() {
       });
       layer?.add(ellipse);
       setEllipses([...ellipses, ellipse]);
-    } else {
+    } else if (drawingMode === "freehand") {
       const line = new Konva.Line({
         points: [pointerPosition.x, pointerPosition.y],
         stroke: "black",
@@ -194,7 +237,7 @@ function Whiteboard() {
         // replace last
         ellipses.splice(ellipses.length - 1, 1, lastEllipse);
         setEllipses(ellipses.concat());
-      } else {
+      } else if (drawingMode === "freehand") {
         const lastLine = lines[lines.length - 1];
         lastLine.points(
           lastLine.points().concat([pointerPosition.x, pointerPosition.y])
@@ -254,30 +297,6 @@ function Whiteboard() {
     setStartPoint(null);
   };
 
-  const handleLine = () => {
-    setDrawingMode("freehand");
-  };
-
-  const handleStraightLine = () => {
-    setDrawingMode("straightLine");
-  };
-
-  const handleRectangle = () => {
-    setDrawingMode("rectangle");
-  };
-
-  const handleCircle = () => {
-    setDrawingMode("circle");
-  };
-
-  const handleEllipse = () => {
-    setDrawingMode("ellipse");
-  };
-
-  const handleSquare = () => {
-    setDrawingMode("square");
-  };
-
   const handleSaveDrawing = () => {
     // save logics
   };
@@ -292,30 +311,38 @@ function Whiteboard() {
     setTexts([]);
   };
 
-  console.log(drawing);
-  console.log(lines);
-  console.log(rectangles);
-  console.log(circles);
-  console.log(ellipses);
-  console.log(squares);
-  console.log(straightLines);
-  console.log(texts);
+  // console.log(drawing);
+  // console.log(lines);
+  // console.log(rectangles);
+  // console.log(circles);
+  // console.log(ellipses);
+  // console.log(squares);
+  // console.log(straightLines);
+  // console.log(texts);
+  // console.log(deviceSize);
+
+  // console.log(isMobile);
 
   return (
-    <div>
+    <div className="w-full flex flex-row-reverse items-center justify-evenly p-5 h-screen bg-gray-100 relative">
       <Stage
         ref={stageRef}
-        width={window.innerWidth - 24}
-        height={window.innerHeight - 180}
+        width={
+          deviceSize === "max-sm"
+            ? window.innerWidth - 50
+            : window.innerWidth - 300
+        }
+        height={
+          deviceSize === "max-sm"
+            ? window.innerHeight - 80
+            : window.innerHeight - 180
+        }
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
-        style={{
-          border: "5px solid purple",
-        }}
       >
         <Layer ref={canvasRef}>
           {lines.map((line, index) => {
@@ -442,76 +469,111 @@ function Whiteboard() {
           ))}
         </Layer>
       </Stage>
-      <div className="p-10 flex gap-4 flex-wrap justify-center items-center">
-        <button
-          className="px-4 py-2 rounded-md bg-purple-700 text-white mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[0.90] hover:scale-125"
-          onClick={handleLine}
-        >
-          Line
-        </button>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={handleStraightLine}
-        >
-          Straight Line
-        </button>
+      <div
+        className="absolute left-10 top-14  border-2 size-10 rounded-md sm:hidden"
+        onClick={() => setIsMobile(!isMobile)}
+      >
+        <IconMenu className="size-full scale-90 text-gray-600" />
+      </div>
+      <div
+        className={`p-10 flex gap-4 flex-wrap justify-center items-center max-w-24  border border-gray-500 shadow-xl rounded-2xl max-sm:absolute duration-300 bg-white ${
+          isMobile ? "left-10" : "-left-40"
+        }`}
+      >
+        <Tooltip content="freehand" showArrow placement="right">
+          <button
+            className={drawingMode === "freehand" ? activeToolClass : toolClass}
+            onClick={() => setDrawingMode("freehand")}
+          >
+            <IconSignature />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={handleRectangle}
-        >
-          Rectangle
-        </button>
+        <Tooltip content="line" showArrow placement="right">
+          <button
+            className={
+              drawingMode === "straightLine" ? activeToolClass : toolClass
+            }
+            onClick={() => setDrawingMode("straightLine")}
+          >
+            <IconPencilMinus />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={handleCircle}
-        >
-          Circle
-        </button>
+        <Tooltip content="rectangle" showArrow placement="right">
+          <button
+            className={
+              drawingMode === "rectangle" ? activeToolClass : toolClass
+            }
+            onClick={() => setDrawingMode("rectangle")}
+          >
+            <IconRectangle className="scale-90" />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={handleEllipse}
-        >
-          Ellipse
-        </button>
+        <Tooltip content="circle" showArrow placement="right">
+          <button
+            className={drawingMode === "circle" ? activeToolClass : toolClass}
+            onClick={() => setDrawingMode("circle")}
+          >
+            <IconCircle className="scale-95" />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={handleSquare}
-        >
-          Square
-        </button>
+        <Tooltip content="ellipse" showArrow placement="right">
+          <button
+            className={drawingMode === "ellipse" ? activeToolClass : toolClass}
+            onClick={() => setDrawingMode("ellipse")}
+          >
+            <IconCircle className="scale-y-85" />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={() => setDrawingMode("drag")}
-        >
-          Drag
-        </button>
+        <Tooltip content="square" showArrow placement="right">
+          <button
+            className={drawingMode === "square" ? activeToolClass : toolClass}
+            onClick={() => setDrawingMode("square")}
+          >
+            <IconSquare className="scale-85" />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={() => setDrawingMode("text")}
-        >
-          Text
-        </button>
+        <Tooltip content="drag (hold shift)" showArrow placement="right">
+          <button
+            className={drawingMode === "drag" ? activeToolClass : toolClass}
+            onClick={() => setDrawingMode("drag")}
+          >
+            <IconHandGrab />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-red-700 hover:bg-red-700 text-red-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={handleClearDrawing}
-        >
-          Clear Drawing
-        </button>
+        <Tooltip content="text" showArrow placement="right">
+          <button
+            className={drawingMode === "text" ? activeToolClass : toolClass}
+            onClick={() => setDrawingMode("text")}
+          >
+            <IconAlphabetLatin />
+          </button>
+        </Tooltip>
 
-        <button
-          className="px-4 py-2 rounded-md bg-white border border-purple-700 hover:bg-purple-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-          onClick={handleSaveDrawing}
-        >
-          Save
-        </button>
+        <Tooltip content="clear screen" showArrow placement="right">
+          <button
+            className="px-2 py-1 rounded-md bg-white border border-red-700 hover:bg-red-700 text-red-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
+            onClick={handleClearDrawing}
+          >
+            <IconSquareRoundedX />
+          </button>
+        </Tooltip>
+
+        <Tooltip content="save" showArrow placement="right">
+          <button
+            className="px-2 py-1 rounded-md bg-purple-700 text-white mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[0.90] hover:scale-125"
+            onClick={handleSaveDrawing}
+          >
+            <IconDeviceFloppy />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );
