@@ -5,6 +5,7 @@ import {
   IconAlphabetLatin,
   IconCircle,
   IconDeviceFloppy,
+  IconDownload,
   IconHandGrab,
   IconMenu,
   IconPencilMinus,
@@ -308,6 +309,18 @@ function Whiteboard() {
     // save logics
   };
 
+  const handleExportDrawing = () => {
+    const stage = stageRef.current;
+    const dataURL = stage.toDataURL({
+      mimeType: "image/png",
+      quality: 1,
+    });
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = "drawing.png";
+    link.click();
+  };
+
   const handleClearDrawing = () => {
     setLines([]);
     setRectangles([]);
@@ -579,6 +592,15 @@ function Whiteboard() {
             onClick={handleSaveDrawing}
           >
             <IconDeviceFloppy />
+          </button>
+        </Tooltip>
+
+        <Tooltip content="save" showArrow placement="right">
+          <button
+            className="px-2 py-1 rounded-md bg-purple-700 text-white mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[0.90] hover:scale-125"
+            onClick={handleExportDrawing}
+          >
+            <IconDownload />
           </button>
         </Tooltip>
       </div>
