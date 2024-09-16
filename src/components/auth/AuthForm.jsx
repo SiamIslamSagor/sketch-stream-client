@@ -1,14 +1,18 @@
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import useContextData from "@/hooks/useContextData";
 import { Spinner } from "@nextui-org/react";
 import axios from "axios";
 import { useState } from "react";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const AuthForm = () => {
+  const { setUser } = useContextData();
   const [formType, setFormType] = useState("signin");
   const [isLoading, setIsLoading] = useState(false);
 
   const axiosPublic = useAxiosPublic();
+  const navigate = useNavigate();
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -32,10 +36,24 @@ const AuthForm = () => {
       try {
         const res = await axiosPublic.post("/user/new", data);
 
-        console.log(res.data);
-        toast.success("Account created successfully.", {
-          id: toastId,
-        });
+        if (res.data.success) {
+          console.log(res.data);
+
+          axiosPublic
+            .get("/user/me")
+            .then(res => {
+              setUser(res.data.user);
+            })
+            .catch(err => {
+              console.log(err);
+              setUser(null);
+            });
+
+          toast.success("Account created successfully.", {
+            id: toastId,
+          });
+          navigate("/");
+        }
       } catch (error) {
         console.log(error);
         toast.error("Something is wrong! try again", { id: toastId });
@@ -44,10 +62,25 @@ const AuthForm = () => {
       try {
         const res = await axiosPublic.post("/user/login", data);
 
-        console.log(res.data);
-        toast.success(res?.data.message, {
-          id: toastId,
-        });
+        if (res.data.success) {
+          console.log(res.data);
+
+          axiosPublic
+            .get("/user/me")
+            .then(res => {
+              setUser(res.data.user);
+            })
+            .catch(err => {
+              console.log(err);
+              setUser(null);
+            });
+
+          navigate("/");
+          toast.success("Account created successfully.", {
+            id: toastId,
+          });
+          navigate("/");
+        }
       } catch (error) {
         console.log(error);
         toast.error("Invalid username or password! try again", { id: toastId });
@@ -59,6 +92,7 @@ const AuthForm = () => {
 
   return (
     <div className="w-full h-screen flex items-center justify-center">
+      <Toaster />
       <div className="max-w-sm w-full border rounded-2xl">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="p-8">

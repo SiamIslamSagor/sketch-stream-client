@@ -33,6 +33,9 @@ export default [
         "warn",
         { allowConstantExport: true },
       ],
+      // New rules for catching unused/undefined variables
+      "no-unused-vars": "warn", // Warn about unused variables
+      "no-undef": "error", // Error for undefined variables
     },
     env: {
       browser: true,

@@ -1,4 +1,5 @@
 import { activeToolClass, toolClass } from "@/constant/constant";
+import useContextData from "@/hooks/useContextData";
 import { Tooltip } from "@nextui-org/react";
 import {
   IconAlphabetLatin,
@@ -17,6 +18,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Circle, Ellipse, Layer, Line, Rect, Stage, Text } from "react-konva";
 
 function Whiteboard() {
+  const { user, stroke, color, fillColor, isFill } = useContextData();
+
+  console.log(user);
+  // console.log(stroke, color, fillColor);
+
   const [deviceSize, setDeviceSize] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -111,8 +117,8 @@ function Whiteboard() {
           pointerPosition.x,
           pointerPosition.y,
         ],
-        stroke: "black",
-        strokeWidth: 2,
+        stroke: color,
+        strokeWidth: stroke,
         lineCap: "round",
         lineJoin: "round",
       });
@@ -124,9 +130,9 @@ function Whiteboard() {
         y: pointerPosition.y,
         width: 0,
         height: 0,
-        // fill: "blue",
-        stroke: "black",
-        strokeWidth: 2,
+        fill: isFill ? fillColor : "",
+        stroke: color,
+        strokeWidth: stroke,
       });
       layer?.add(rect);
       setRectangles([...rectangles, rect]);
@@ -135,9 +141,9 @@ function Whiteboard() {
         x: pointerPosition.x,
         y: pointerPosition.y,
         radius: 0,
-        // fill: "red",
-        stroke: "black",
-        strokeWidth: 2,
+        fill: isFill ? fillColor : "",
+        stroke: color,
+        strokeWidth: stroke,
       });
       layer?.add(circle);
       setCircles([...circles, circle]);
@@ -147,9 +153,9 @@ function Whiteboard() {
         y: pointerPosition.y,
         width: 0,
         height: 0,
-        // fill: "green",
-        stroke: "black",
-        strokeWidth: 2,
+        fill: isFill ? fillColor : "",
+        stroke: color,
+        strokeWidth: stroke,
       });
       layer?.add(square);
       setSquares([...squares, square]);
@@ -159,16 +165,17 @@ function Whiteboard() {
         y: pointerPosition.y,
         radiusX: 0,
         radiusY: 0,
-        stroke: "black",
-        strokeWidth: 2,
+        stroke: color,
+        fill: isFill ? fillColor : "",
+        strokeWidth: stroke,
       });
       layer?.add(ellipse);
       setEllipses([...ellipses, ellipse]);
     } else if (drawingMode === "freehand") {
       const line = new Konva.Line({
         points: [pointerPosition.x, pointerPosition.y],
-        stroke: "black",
-        strokeWidth: 2,
+        stroke: color,
+        strokeWidth: stroke,
         lineCap: "round",
         lineJoin: "round",
       });
@@ -350,7 +357,7 @@ function Whiteboard() {
               <Line
                 key={index}
                 points={line.points()}
-                stroke="black"
+                stroke={line.stroke()}
                 strokeWidth={line.strokeWidth()}
                 lineCap="round"
                 lineJoin="round"
@@ -471,7 +478,7 @@ function Whiteboard() {
       </Stage>
 
       <div
-        className="absolute left-10 top-14  border-2 size-10 rounded-md sm:hidden"
+        className="absolute left-10 top-14  border-2 size-10 rounded-md sm:hidden cursor-pointer hover:bg-gray-200 transition"
         onClick={() => setIsMobile(!isMobile)}
       >
         <IconMenu className="size-full scale-90 text-gray-600" />
