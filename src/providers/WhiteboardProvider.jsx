@@ -45,7 +45,7 @@ const WhiteboardProvider = ({ children }) => {
     logOut,
   };
 
-  /*  useEffect(() => {
+  useEffect(() => {
     axiosPublic
       .get("/user/me")
       .then(res => {
@@ -55,7 +55,7 @@ const WhiteboardProvider = ({ children }) => {
         console.log(err);
         setUser(null);
       });
-  }, [axiosPublic]); */
+  }, [axiosPublic]);
 
   return (
     <WhiteboardContext.Provider value={data}>
