@@ -474,7 +474,9 @@ function Whiteboard() {
         <Tooltip content="settings" showArrow placement="bottom">
           <div
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition"
+            className={`p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition ${
+              isSettingsOpen && "bg-neutral-600"
+            }`}
           >
             <IconSettings />
           </div>
@@ -559,7 +561,10 @@ function Whiteboard() {
                         break;
                     }
                   }}
-                  className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition"
+                  className={`p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition ${
+                    tool.mode === drawingMode &&
+                    "bg-[#32a852] hover:bg-[#32a852]"
+                  }`}
                 >
                   {<tool.icon />}
                 </div>
