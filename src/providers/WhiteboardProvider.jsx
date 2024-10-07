@@ -6,8 +6,8 @@ export const WhiteboardContext = createContext(null);
 
 const WhiteboardProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [stroke, setStroke] = useState(1);
-  const [color, setColor] = useState("#000000");
+  const [stroke, setStroke] = useState(5);
+  const [color, setColor] = useState("#32a852");
   const [fillColor, setFillColor] = useState("#000000");
   const [isFill, setIsFill] = useState(false);
 

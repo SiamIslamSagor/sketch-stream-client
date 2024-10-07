@@ -1,4 +1,5 @@
 import { activeToolClass, toolClass } from "@/constant/constant";
+import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
 import { Tooltip } from "@nextui-org/react";
 import {
@@ -10,9 +11,15 @@ import {
   IconMenu,
   IconPencilMinus,
   IconRectangle,
+  IconSettings,
+  IconSettingsAutomation,
+  IconSettingsBolt,
+  IconSettingsCheck,
+  IconSettingsCode,
   IconSignature,
   IconSquare,
   IconSquareRoundedX,
+  IconUser,
 } from "@tabler/icons-react";
 import Konva from "konva";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,24 +27,36 @@ import { Circle, Ellipse, Layer, Line, Rect, Stage, Text } from "react-konva";
 
 function Whiteboard() {
   const { user, stroke, color, fillColor, isFill } = useContextData();
+  const axiosPublic = useAxiosPublic();
 
   console.log(user);
   // console.log(stroke, color, fillColor);
 
   const [deviceSize, setDeviceSize] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const [lines, setLines] = useState([]);
+  const [straightLines, setStraightLines] = useState([]);
+  const [rectangles, setRectangles] = useState([]);
+  const [circles, setCircles] = useState([]);
+  const [ellipses, setEllipses] = useState([]);
+  const [squares, setSquares] = useState([]);
+  const [texts, setTexts] = useState([]);
+
+  console.log({
+    lines,
+    straightLines,
+    rectangles,
+    circles,
+    ellipses,
+    squares,
+    texts,
+  });
 
   const [drawing, setDrawing] = useState(false);
-  const [lines, setLines] = useState([]);
-  const [rectangles, setRectangles] = useState([]);
-  const [squares, setSquares] = useState([]);
-  const [circles, setCircles] = useState([]);
-  const [ellipses, setEllipses] = useState([]); // Add a new state variable for ellipses
-  const [straightLines, setStraightLines] = useState([]); // Add a new state variable for straight lines
 
   const [isShiftPressed, setIsShiftPressed] = useState(false);
-
-  const [texts, setTexts] = useState([]); // State for text annotations
 
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -305,8 +324,24 @@ function Whiteboard() {
     setStartPoint(null);
   };
 
-  const handleSaveDrawing = () => {
+  const handleSaveDrawing = async () => {
     // save logics
+    try {
+      const data = {
+        lines,
+        straightLines,
+        rectangles,
+        circles,
+        ellipses,
+        squares,
+        texts,
+      };
+
+      const response = await axiosPublic.post("/drawing/new", data);
+      console.log(response.data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleExportDrawing = () => {
@@ -343,20 +378,218 @@ function Whiteboard() {
 
   // console.log(isMobile);
 
+  const tools = [
+    {
+      name: "freehand",
+      mode: "freehand",
+      icon: IconSignature,
+    },
+    {
+      name: "straight line",
+      mode: "straightLine",
+      icon: IconPencilMinus,
+    },
+    {
+      name: "rectangle",
+      mode: "rectangle",
+      icon: IconRectangle,
+    },
+    {
+      name: "ellipse",
+      mode: "ellipse",
+      icon: IconCircle,
+    },
+    {
+      name: "drag",
+      mode: "drag",
+      icon: IconHandGrab,
+    },
+    {
+      name: "text",
+      mode: "text",
+      icon: IconAlphabetLatin,
+    },
+    {
+      name: "clear screen",
+      mode: "cls",
+      icon: IconSquareRoundedX,
+      handler: handleClearDrawing,
+    },
+    {
+      name: "save",
+      mode: "save",
+      icon: IconDeviceFloppy,
+      handler: handleSaveDrawing,
+    },
+    {
+      name: "download",
+      mode: "download",
+      icon: IconDownload,
+      handler: handleExportDrawing,
+    },
+  ];
+
   return (
-    <div className="w-full flex flex-row-reverse items-center justify-evenly p-5 h-screen bg-gray-100 relative">
+    <div className="w-full flex flex-row-reverse items-center justify-evenly h-screen bg-gray-100 relative overflow-auto">
+      <div className="absolute text-white top-5 max-sm:w-[90%] mx-2 z-50 py-1 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center">
+        {/* <div className="flex gap-5">
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconSignature />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconPencilMinus />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconRectangle />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconSignature />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconPencilMinus />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconRectangle />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconSignature />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconPencilMinus />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconRectangle />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconSignature />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconPencilMinus />
+          </div>
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconRectangle />
+          </div>
+        </div> */}
+
+        <Tooltip content="settings" showArrow placement="bottom">
+          <div
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition"
+          >
+            <IconSettings />
+          </div>
+        </Tooltip>
+
+        <div
+          className={`absolute bg-[#212020] top-12 max-w-72 p-5 rounded-lg duration-300 ${
+            isSettingsOpen ? "skew-x-0 scale-1" : "skew-x-[75deg] scale-[0.0]"
+          }`}
+        >
+          <div className="grid grid-cols-2 gap-5 ">
+            <div className="flex items-center justify-between gap-2">
+              <label className="w-min">Stroke</label>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                value={stroke}
+                // onChange={handleInputChange}
+                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <label className="w-min">Stroke Color</label>
+              <input
+                type="color"
+                value={color}
+                // onChange={e => setColor(e.target.value)}
+                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
+                id="hs-color-input"
+                title="Choose your color"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <label className="w-min">Fill</label>
+              <input
+                type="checkbox"
+                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-2xl disabled:opacity-50 disabled:pointer-events-none"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <label className="w-fit">Fill Color</label>
+              <input
+                type="color"
+                value={fillColor}
+                // disabled={!isFill}
+                // onChange={e => setFillColor(e.target.value)}
+                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
+                id="hs-color-input"
+                title="Choose your color"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="w-[1px] h-5 bg-neutral-200 mx-2" />
+
+        <div className="flex overflow-x-auto  gap-2 sm:gap-5">
+          {tools.map(tool => {
+            console.log(tool.name);
+            return (
+              <Tooltip
+                key={tool.name}
+                content={tool.name}
+                showArrow
+                placement="bottom"
+              >
+                <div
+                  onClick={() => {
+                    switch (tool.mode) {
+                      case "cls":
+                        handleClearDrawing();
+                        break;
+                      case "save":
+                        handleSaveDrawing();
+                        break;
+                      case "download":
+                        handleExportDrawing();
+                        break;
+                      default:
+                        setDrawingMode(tool.mode);
+                        break;
+                    }
+                  }}
+                  className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition"
+                >
+                  {<tool.icon />}
+                </div>
+              </Tooltip>
+            );
+          })}
+        </div>
+
+        <div className="w-[1px] h-5 bg-neutral-200 mx-2" />
+
+        <Tooltip content="me" showArrow placement="bottom">
+          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+            <IconUser />
+          </div>
+        </Tooltip>
+      </div>
       <Stage
         ref={stageRef}
-        width={
+        /* width={
           deviceSize === "max-sm"
             ? window.innerWidth - 50
-            : window.innerWidth - 300
+            window.innerWidth - 300
         }
         height={
           deviceSize === "max-sm"
             ? window.innerHeight - 80
             : window.innerHeight - 180
-        }
+        } */
+        width={window.innerWidth}
+        height={window.innerHeight}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -455,7 +688,7 @@ function Whiteboard() {
               <Line
                 key={index}
                 points={line.points()}
-                stroke="black"
+                stroke={line.stroke()}
                 strokeWidth={line.strokeWidth()}
                 lineCap="round"
                 lineJoin="round"
@@ -490,8 +723,8 @@ function Whiteboard() {
         </Layer>
       </Stage>
 
-      <div
-        className="absolute left-10 top-14  border-2 size-10 rounded-md sm:hidden cursor-pointer hover:bg-gray-200 transition"
+      {/*  <div
+        className="absolute left-10 top-14  border-2 size-10 rounded-md hidden cursor-pointer hover:bg-gray-200 transition"
         onClick={() => setIsMobile(!isMobile)}
       >
         <IconMenu className="size-full scale-90 text-gray-600" />
@@ -595,7 +828,7 @@ function Whiteboard() {
           </button>
         </Tooltip>
 
-        <Tooltip content="save" showArrow placement="right">
+        <Tooltip content="download" showArrow placement="right">
           <button
             className="px-2 py-1 rounded-md bg-purple-700 text-white mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[0.90] hover:scale-125"
             onClick={handleExportDrawing}
@@ -603,7 +836,7 @@ function Whiteboard() {
             <IconDownload />
           </button>
         </Tooltip>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -2,12 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  padding: 0 !important;
+}
+
 .konvajs-content,
 .konvajs-content > canvas {
   /* outline: 1px dashed purple; */
-  border-radius: 32px;
-  background: #ffffff;
-  box-shadow: 8px 8px 72px #a8a8a8, -8px -8px 72px #ffffff;
+  /* border-radius: 32px; */
+  /* background: #0cb13b; */
+  background: #121212;
+  /* box-shadow: 8px 8px 72px #a8a8a8, -8px -8px 72px #ffffff; */
+}
+
+::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 20px;
 }
 
 @layer base {

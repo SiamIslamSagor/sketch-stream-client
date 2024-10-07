@@ -16,7 +16,7 @@ const router = createBrowserRouter([
       <div>
         <Toaster />
         {/* <h1 className=" ">Hello world!</h1> */}
-        <Navbar />
+        {/* <Navbar /> */}
         <Whiteboard />
       </div>
     ),

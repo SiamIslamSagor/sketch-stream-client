@@ -159,6 +159,7 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
             type="text"
             name="username"
             id="username"
+            defaultValue={"siam09"}
           />
         </div>
         <div className="mt-4">
@@ -172,6 +173,7 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
             type="password"
             name="password"
             id="password"
+            defaultValue={"pass"}
           />
         </div>
       </div>
