@@ -20,4 +20,5 @@
  * resize
  * shortcut keys
  * erase
+ * selection
  */

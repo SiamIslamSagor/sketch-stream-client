@@ -1,15 +1,20 @@
 import { activeToolClass, toolClass } from "@/constant/constant";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
+import { handleInputChange } from "@/lib/features";
 import { Tooltip } from "@nextui-org/react";
 import {
   IconAlphabetLatin,
   IconCircle,
+  IconCursorOff,
+  IconCursorText,
   IconDeviceFloppy,
   IconDownload,
   IconHandGrab,
   IconMenu,
+  IconMouse,
   IconPencilMinus,
+  IconPointer,
   IconRectangle,
   IconSettings,
   IconSettingsAutomation,
@@ -26,7 +31,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Circle, Ellipse, Layer, Line, Rect, Stage, Text } from "react-konva";
 
 function Whiteboard() {
-  const { user, stroke, color, fillColor, isFill } = useContextData();
+  const {
+    user,
+    stroke,
+    setStroke,
+    color,
+    setColor,
+    fillColor,
+    isFill,
+    setIsFill,
+    setFillColor,
+  } = useContextData();
   const axiosPublic = useAxiosPublic();
 
   console.log(user);
@@ -86,6 +101,7 @@ function Whiteboard() {
   }, []);
 
   const handleResize = useCallback(() => {
+    console.log("resizing");
     const width = window.innerWidth;
 
     if (width >= 1280) {
@@ -321,6 +337,9 @@ function Whiteboard() {
 
   const handleMouseUp = () => {
     setDrawing(false);
+    const isFH = drawingMode !== "freehand";
+    if (isFH) setDrawingMode("pointer");
+
     setStartPoint(null);
   };
 
@@ -380,6 +399,11 @@ function Whiteboard() {
 
   const tools = [
     {
+      name: "pointer",
+      mode: "pointer",
+      icon: IconPointer,
+    },
+    {
       name: "freehand",
       mode: "freehand",
       icon: IconSignature,
@@ -431,7 +455,12 @@ function Whiteboard() {
 
   return (
     <div className="w-full flex flex-row-reverse items-center justify-evenly h-screen bg-gray-100 relative overflow-auto">
-      <div className="absolute text-white top-5 max-sm:w-[90%] mx-2 z-50 py-1 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center">
+      <div
+        hidden={!isSettingsOpen}
+        onClick={() => setIsSettingsOpen(false)}
+        className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
+      />
+      <div className="absolute text-white top-5 max-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center">
         {/* <div className="flex gap-5">
           <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
             <IconSignature />
@@ -471,7 +500,12 @@ function Whiteboard() {
           </div>
         </div> */}
 
-        <Tooltip content="settings" showArrow placement="bottom">
+        <Tooltip
+          content="settings"
+          showArrow
+          placement="bottom"
+          color="foreground"
+        >
           <div
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             className={`p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition ${
@@ -483,7 +517,7 @@ function Whiteboard() {
         </Tooltip>
 
         <div
-          className={`absolute bg-[#212020] top-12 max-w-72 p-5 rounded-lg duration-300 ${
+          className={`absolute bg-[#212020] top-16 max-w-72 p-5 rounded-lg duration-300 ${
             isSettingsOpen ? "skew-x-0 scale-1" : "skew-x-[75deg] scale-[0.0]"
           }`}
         >
@@ -495,7 +529,7 @@ function Whiteboard() {
                 min="1"
                 max="1000"
                 value={stroke}
-                // onChange={handleInputChange}
+                onChange={e => handleInputChange(e, setStroke)}
                 className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
               />
             </div>
@@ -504,7 +538,7 @@ function Whiteboard() {
               <input
                 type="color"
                 value={color}
-                // onChange={e => setColor(e.target.value)}
+                onChange={e => setColor(e.target.value)}
                 className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
                 id="hs-color-input"
                 title="Choose your color"
@@ -512,19 +546,25 @@ function Whiteboard() {
             </div>
             <div className="flex items-center justify-between gap-2">
               <label className="w-min">Fill</label>
-              <input
-                type="checkbox"
-                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-2xl disabled:opacity-50 disabled:pointer-events-none"
-              />
+              <div className="overflow-hidden w-fit size-10 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={isFill}
+                  onChange={e => setIsFill(e.target.checked)}
+                  className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-2xl disabled:opacity-50 disabled:pointer-events-none"
+                />
+              </div>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <label className="w-fit">Fill Color</label>
+              <label className={`w-fit transition ${!isFill && "opacity-10"}`}>
+                Fill Color
+              </label>
               <input
                 type="color"
                 value={fillColor}
-                // disabled={!isFill}
-                // onChange={e => setFillColor(e.target.value)}
-                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
+                disabled={!isFill}
+                onChange={e => setFillColor(e.target.value)}
+                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-10 disabled:pointer-events-none transition"
                 id="hs-color-input"
                 title="Choose your color"
               />
@@ -536,13 +576,14 @@ function Whiteboard() {
 
         <div className="flex overflow-x-auto  gap-2 sm:gap-5">
           {tools.map(tool => {
-            console.log(tool.name);
+            // console.log(tool.name);
             return (
               <Tooltip
                 key={tool.name}
                 content={tool.name}
                 showArrow
                 placement="bottom"
+                color="foreground"
               >
                 <div
                   onClick={() => {
@@ -575,7 +616,7 @@ function Whiteboard() {
 
         <div className="w-[1px] h-5 bg-neutral-200 mx-2" />
 
-        <Tooltip content="me" showArrow placement="bottom">
+        <Tooltip content="me" showArrow placement="bottom" color="foreground">
           <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
             <IconUser />
           </div>
