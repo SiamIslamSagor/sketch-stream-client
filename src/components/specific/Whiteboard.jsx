@@ -2,9 +2,10 @@ import { activeToolClass, toolClass } from "@/constant/constant";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
 import { handleInputChange } from "@/lib/features";
-import { Tooltip } from "@nextui-org/react";
+import { drip, Tooltip } from "@nextui-org/react";
 import {
   IconAlphabetLatin,
+  IconArrowLeft,
   IconCircle,
   IconCursorOff,
   IconCursorText,
@@ -28,7 +29,16 @@ import {
 } from "@tabler/icons-react";
 import Konva from "konva";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Circle, Ellipse, Layer, Line, Rect, Stage, Text } from "react-konva";
+import {
+  Arrow,
+  Circle,
+  Ellipse,
+  Layer,
+  Line,
+  Rect,
+  Stage,
+  Text,
+} from "react-konva";
 
 function Whiteboard() {
   const {
@@ -56,6 +66,7 @@ function Whiteboard() {
   const [rectangles, setRectangles] = useState([]);
   const [circles, setCircles] = useState([]);
   const [ellipses, setEllipses] = useState([]);
+  const [arrows, setArrows] = useState([]);
   const [squares, setSquares] = useState([]);
   const [texts, setTexts] = useState([]);
 
@@ -207,6 +218,22 @@ function Whiteboard() {
       });
       layer?.add(ellipse);
       setEllipses([...ellipses, ellipse]);
+    } else if (drawingMode === "arrow") {
+      setStartPoint(pointerPosition);
+      const arrow = new Konva.Arrow({
+        x: pointerPosition.x,
+        y: pointerPosition.y,
+        points: [0, 0, 0, 0],
+        pointerLength:
+          stroke >= 10 ? stroke : stroke >= 3 ? stroke * 2 : stroke * 5,
+        pointerWidth:
+          stroke >= 10 ? stroke : stroke >= 3 ? stroke * 2 : stroke * 5,
+        fill: isFill ? fillColor : "",
+        stroke: color,
+        strokeWidth: stroke,
+      });
+      layer?.add(arrow);
+      setArrows([...arrows, arrow]);
     } else if (drawingMode === "freehand") {
       const line = new Konva.Line({
         points: [pointerPosition.x, pointerPosition.y],
@@ -280,6 +307,18 @@ function Whiteboard() {
         // replace last
         ellipses.splice(ellipses.length - 1, 1, lastEllipse);
         setEllipses(ellipses.concat());
+      } else if (drawingMode === "arrow") {
+        const lastArrow = arrows[arrows.length - 1];
+        const points = [
+          startPoint.x,
+          startPoint.y,
+          pointerPosition.x,
+          pointerPosition.y,
+        ];
+        lastArrow.points(points);
+        layer?.batchDraw();
+        // replace last
+        setArrows(arrows.concat());
       } else if (drawingMode === "freehand") {
         const lastLine = lines[lines.length - 1];
         lastLine.points(
@@ -337,8 +376,9 @@ function Whiteboard() {
 
   const handleMouseUp = () => {
     setDrawing(false);
-    const isFH = drawingMode !== "freehand";
-    if (isFH) setDrawingMode("pointer");
+    // const isNotFH = drawingMode !== "freehand";
+    // const isNotDG = drawingMode !== "drag";
+    // if (isNotFH && isNotDG) setDrawingMode("pointer");
 
     setStartPoint(null);
   };
@@ -422,6 +462,11 @@ function Whiteboard() {
       name: "ellipse",
       mode: "ellipse",
       icon: IconCircle,
+    },
+    {
+      name: "arrow",
+      mode: "arrow",
+      icon: IconArrowLeft,
     },
     {
       name: "drag",
@@ -729,6 +774,22 @@ function Whiteboard() {
               />
             );
           })}
+
+          {arrows.map((arrow, index) => {
+            return (
+              <Arrow
+                key={index}
+                points={arrow.points()}
+                pointerLength={arrow.pointerLength()}
+                pointerWidth={arrow.pointerWidth()}
+                fill={arrow.fill()}
+                stroke={arrow.stroke()}
+                strokeWidth={arrow.strokeWidth()}
+                draggable={false}
+              />
+            );
+          })}
+
           {straightLines.map((line, index) => {
             return (
               <Line

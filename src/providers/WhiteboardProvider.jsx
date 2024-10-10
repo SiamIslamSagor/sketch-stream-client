@@ -8,7 +8,7 @@ const WhiteboardProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [stroke, setStroke] = useState(5);
   const [color, setColor] = useState("#32a852");
-  const [fillColor, setFillColor] = useState("#000000");
+  const [fillColor, setFillColor] = useState("#32a852");
   const [isFill, setIsFill] = useState(false);
 
   const axiosPublic = useAxiosPublic();
