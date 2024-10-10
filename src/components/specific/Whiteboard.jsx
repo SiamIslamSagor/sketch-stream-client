@@ -2,10 +2,12 @@ import { activeToolClass, toolClass } from "@/constant/constant";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
 import { handleInputChange } from "@/lib/features";
-import { drip, Tooltip } from "@nextui-org/react";
+import { Button, drip, Tooltip } from "@nextui-org/react";
 import {
   IconAlphabetLatin,
   IconArrowLeft,
+  IconArrowsMove,
+  IconArrowsMoveVertical,
   IconCircle,
   IconCursorOff,
   IconCursorText,
@@ -60,6 +62,7 @@ function Whiteboard() {
   const [deviceSize, setDeviceSize] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [lines, setLines] = useState([]);
   const [straightLines, setStraightLines] = useState([]);
@@ -151,7 +154,7 @@ function Whiteboard() {
         x: pointerPosition.x,
         y: pointerPosition.y,
         text: "Double Click to edit",
-        fontSize: 18,
+        fontSize: 36,
         draggable: true,
       };
       setTexts([...texts, newText]);
@@ -241,6 +244,8 @@ function Whiteboard() {
         strokeWidth: stroke,
         lineCap: "round",
         lineJoin: "round",
+        // dash: [33, 10], // dashed line with a length of 33px and a gap of 10px
+        tension: 0.5, // smoothness of the line
       });
       layer?.add(line);
       setLines([...lines, line]);
@@ -376,9 +381,9 @@ function Whiteboard() {
 
   const handleMouseUp = () => {
     setDrawing(false);
-    // const isNotFH = drawingMode !== "freehand";
-    // const isNotDG = drawingMode !== "drag";
-    // if (isNotFH && isNotDG) setDrawingMode("pointer");
+    const isNotFH = drawingMode !== "freehand";
+    const isNotDG = drawingMode !== "drag";
+    if (isNotFH && isNotDG) setDrawingMode("pointer");
 
     setStartPoint(null);
   };
@@ -421,6 +426,7 @@ function Whiteboard() {
     setCircles([]);
     setSquares([]);
     setEllipses([]);
+    setArrows([]);
     setStraightLines([]);
     setTexts([]);
   };
@@ -469,9 +475,9 @@ function Whiteboard() {
       icon: IconArrowLeft,
     },
     {
-      name: "drag",
+      name: "move",
       mode: "drag",
-      icon: IconHandGrab,
+      icon: IconArrowsMove,
     },
     {
       name: "text",
@@ -499,52 +505,18 @@ function Whiteboard() {
   ];
 
   return (
-    <div className="w-full flex flex-row-reverse items-center justify-evenly h-screen bg-gray-100 relative overflow-auto">
+    <div className="w-full flex flex-row-reverse items-center justify-evenly h-screen bg-gray-100 relative overflow-auto cursor-====kjgrab">
       <div
         hidden={!isSettingsOpen}
         onClick={() => setIsSettingsOpen(false)}
         className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
       />
+      <div
+        hidden={!isProfileOpen}
+        onClick={() => setIsProfileOpen(false)}
+        className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
+      />
       <div className="absolute text-white top-5 max-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center">
-        {/* <div className="flex gap-5">
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconSignature />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconPencilMinus />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconRectangle />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconSignature />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconPencilMinus />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconRectangle />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconSignature />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconPencilMinus />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconRectangle />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconSignature />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconPencilMinus />
-          </div>
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
-            <IconRectangle />
-          </div>
-        </div> */}
-
         <Tooltip
           content="settings"
           showArrow
@@ -662,10 +634,38 @@ function Whiteboard() {
         <div className="w-[1px] h-5 bg-neutral-200 mx-2" />
 
         <Tooltip content="me" showArrow placement="bottom" color="foreground">
-          <div className="p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition">
+          <div
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className={`p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition ${
+              isProfileOpen && "bg-neutral-600"
+            }`}
+          >
             <IconUser />
           </div>
         </Tooltip>
+
+        <div
+          className={`absolute bg-[#212020] top-16 right-4 max-w-72 min-w-72 rounded-lg overflow-hidden duration-300 ${
+            isProfileOpen ? "skew-x-0 scale-1" : "skew-x-[75deg] scale-[0.0]"
+          }`}
+        >
+          <div className="">
+            <div className="capitalize divide-y-1 divide-neutral-600">
+              <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                first option
+              </h4>
+              <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                second option
+              </h4>
+              <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                third option
+              </h4>
+              <Button className="relative w-full flex justify-center border border-transparent text-sm font-medium rounded-none text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   active:scale-100 duration-300 disabled:opacity-60 uppercase focus:ring-0">
+                sign in
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
       <Stage
         ref={stageRef}
@@ -698,6 +698,8 @@ function Whiteboard() {
                 strokeWidth={line.strokeWidth()}
                 lineCap="round"
                 lineJoin="round"
+                dash={line.dash()}
+                tension={line.tension()}
                 draggable={false}
               />
             );
@@ -811,7 +813,8 @@ function Whiteboard() {
               y={text.y}
               text={text.text}
               fontSize={text.fontSize}
-              fill="black"
+              fontFamily="Calibri"
+              fill="white"
               draggable={isShiftPressed}
               onDblClick={() => handleUpdateText(text, index)}
               onDblTap={() => handleUpdateText(text, index)}
