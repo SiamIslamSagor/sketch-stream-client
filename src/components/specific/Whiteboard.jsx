@@ -27,6 +27,7 @@ import {
   IconSignature,
   IconSquare,
   IconSquareRoundedX,
+  IconTypography,
   IconUser,
 } from "@tabler/icons-react";
 import Konva from "konva";
@@ -482,7 +483,7 @@ function Whiteboard() {
     {
       name: "text",
       mode: "text",
-      icon: IconAlphabetLatin,
+      icon: IconTypography,
     },
     {
       name: "clear screen",
