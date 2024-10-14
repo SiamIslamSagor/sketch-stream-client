@@ -36,12 +36,14 @@ import {
   Arrow,
   Circle,
   Ellipse,
+  Group,
   Layer,
   Line,
   Rect,
   Stage,
   Text,
 } from "react-konva";
+import { Html } from "react-konva-utils";
 
 function Whiteboard() {
   const {
@@ -57,11 +59,12 @@ function Whiteboard() {
   } = useContextData();
   const axiosPublic = useAxiosPublic();
 
-  console.log(user);
+  // console.log(user);
   // console.log(stroke, color, fillColor);
 
   const [deviceSize, setDeviceSize] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [inTop20, setInTop20] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -74,7 +77,7 @@ function Whiteboard() {
   const [squares, setSquares] = useState([]);
   const [texts, setTexts] = useState([]);
 
-  console.log({
+  /*   console.log({
     lines,
     straightLines,
     rectangles,
@@ -82,7 +85,7 @@ function Whiteboard() {
     ellipses,
     squares,
     texts,
-  });
+  }); */
 
   const [drawing, setDrawing] = useState(false);
 
@@ -97,12 +100,15 @@ function Whiteboard() {
     const handleKeyDown = event => {
       if (event.key === "Shift") {
         setIsShiftPressed(true);
+        setDrawingMode("drag");
+        console.log("Shift key pressed!");
       }
     };
 
     const handleKeyUp = event => {
       if (event.key === "Shift") {
         setIsShiftPressed(false);
+        console.log("Shift keyup!");
       }
     };
 
@@ -115,8 +121,32 @@ function Whiteboard() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleMouseMove = event => {
+      const { clientY } = event;
+      const windowHeight = window.innerHeight;
+      const isInTop20 = clientY < windowHeight * 0.27;
+      if (isInTop20 && !inTop20) {
+        console.log("Cursor entered the top 20% of the window");
+        setInTop20(true);
+      } else if (!isInTop20 && inTop20) {
+        console.log("Cursor left the top 20% of the window");
+        setInTop20(false);
+        // setIsSettingsOpen(false);
+        // setIsProfileOpen(false);
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [inTop20]);
+
   const handleResize = useCallback(() => {
-    console.log("resizing");
+    // console.log("resizing");
     const width = window.innerWidth;
 
     if (width >= 1280) {
@@ -371,12 +401,67 @@ function Whiteboard() {
     }
   };
 
-  const handleUpdateText = (text, index) => {
-    const newText = prompt("Edit text:", text.text);
+  const handleUpdateText = (text, index, newText) => {
+    console.log(text, `index is: ${index}`, newText);
+    if (newText) {
+      const updatedTexts = [...texts];
+      updatedTexts[index] = { ...text, text: newText };
+      setTexts(updatedTexts);
+    }
+    /* const newText = prompt("Edit text:", text.text);
     if (newText !== null) {
       const updatedTexts = [...texts];
       updatedTexts[index] = { ...text, text: newText };
       setTexts(updatedTexts);
+    } */
+
+    /* const newText = prompt("Edit text:", text.text);
+    if (newText !== null) {
+      const updatedTexts = [...texts];
+      updatedTexts[index] = { ...text, text: newText };
+      setTexts(updatedTexts);
+    } */
+  };
+
+  const handleMoveTextStart = text => {
+    // Store the original position
+    text.originalX = text.x;
+    text.originalY = text.y;
+  };
+
+  const handleMoveText = (e, text, index) => {
+    if (isShiftPressed) {
+      console.log("NEW POSITION:", e.target.x(), e.target.y());
+
+      const updatedTexts = texts.slice();
+      updatedTexts[index] = {
+        ...text,
+        x: e.target.x(),
+        y: e.target.y(),
+      };
+      setTexts(updatedTexts);
+      console.log(texts);
+    }
+  };
+
+  const handleMoveTextEnd = (e, text) => {
+    console.warn("Reverted to original position!");
+    if (!isShiftPressed) {
+      // Revert to the original position
+      e.target.x(text.originalX);
+      e.target.y(text.originalY);
+
+      // Update state to trigger re-render
+      text.x = text.originalX;
+      text.y = text.originalY;
+
+      console.warn("Reverted to original position!");
+    } else {
+      console.warn("Reverted to original position!");
+
+      // Update the texts's position to the new one
+      text.x = e.target.x();
+      text.y = e.target.y();
     }
   };
 
@@ -506,7 +591,7 @@ function Whiteboard() {
   ];
 
   return (
-    <div className="w-full flex flex-row-reverse items-center justify-evenly h-screen bg-gray-100 relative overflow-auto cursor-====kjgrab">
+    <div className="w-full flex flex-row-reverse items-center justify-evenly h-screen bg-[#121212] relative overflow-auto cursor-====kjgrab">
       <div
         hidden={!isSettingsOpen}
         onClick={() => setIsSettingsOpen(false)}
@@ -517,7 +602,11 @@ function Whiteboard() {
         onClick={() => setIsProfileOpen(false)}
         className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
       />
-      <div className="absolute text-white top-5 max-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center">
+      <div
+        className={`absolute text-white smax-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center duration-300 ${
+          inTop20 ? "top-5" : "-top-16"
+        } `}
+      >
         <Tooltip
           content="settings"
           showArrow
@@ -807,14 +896,14 @@ function Whiteboard() {
             );
           })}
 
-          {texts.map((text, index) => (
+          {/* {texts.map((text, index) => (
             <Text
               key={index}
               x={text.x}
               y={text.y}
               text={text.text}
               fontSize={text.fontSize}
-              fontFamily="Calibri"
+              fontFamily="Kalam"
               fill="white"
               draggable={isShiftPressed}
               onDblClick={() => handleUpdateText(text, index)}
@@ -830,126 +919,166 @@ function Whiteboard() {
                 console.log(texts);
               }}
             />
+          ))} */}
+
+          {texts.map((text, index) => (
+            <EditableText
+              key={index}
+              text={text}
+              index={index}
+              drawingMode={drawingMode}
+              onUpdateText={handleUpdateText}
+              isShiftPressed={isShiftPressed}
+              moveStart={handleMoveTextStart}
+              moveHandler={handleMoveText}
+              moveEnd={handleMoveTextEnd}
+            />
           ))}
         </Layer>
       </Stage>
-
-      {/*  <div
-        className="absolute left-10 top-14  border-2 size-10 rounded-md hidden cursor-pointer hover:bg-gray-200 transition"
-        onClick={() => setIsMobile(!isMobile)}
-      >
-        <IconMenu className="size-full scale-90 text-gray-600" />
-      </div>
-      <div
-        className={`p-10 flex gap-4 flex-wrap justify-center items-center max-w-24  border border-gray-500 shadow-xl rounded-2xl max-sm:absolute duration-300 bg-white ${
-          isMobile ? "left-10" : "-left-40"
-        }`}
-      >
-        <Tooltip content="freehand" showArrow placement="right">
-          <button
-            className={drawingMode === "freehand" ? activeToolClass : toolClass}
-            onClick={() => setDrawingMode("freehand")}
-          >
-            <IconSignature />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="line" showArrow placement="right">
-          <button
-            className={
-              drawingMode === "straightLine" ? activeToolClass : toolClass
-            }
-            onClick={() => setDrawingMode("straightLine")}
-          >
-            <IconPencilMinus />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="rectangle" showArrow placement="right">
-          <button
-            className={
-              drawingMode === "rectangle" ? activeToolClass : toolClass
-            }
-            onClick={() => setDrawingMode("rectangle")}
-          >
-            <IconRectangle className="scale-90" />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="circle" showArrow placement="right">
-          <button
-            className={drawingMode === "circle" ? activeToolClass : toolClass}
-            onClick={() => setDrawingMode("circle")}
-          >
-            <IconCircle className="scale-95" />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="ellipse" showArrow placement="right">
-          <button
-            className={drawingMode === "ellipse" ? activeToolClass : toolClass}
-            onClick={() => setDrawingMode("ellipse")}
-          >
-            <IconCircle className="scale-y-85" />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="square" showArrow placement="right">
-          <button
-            className={drawingMode === "square" ? activeToolClass : toolClass}
-            onClick={() => setDrawingMode("square")}
-          >
-            <IconSquare className="scale-85" />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="drag (hold shift)" showArrow placement="right">
-          <button
-            className={drawingMode === "drag" ? activeToolClass : toolClass}
-            onClick={() => setDrawingMode("drag")}
-          >
-            <IconHandGrab />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="text" showArrow placement="right">
-          <button
-            className={drawingMode === "text" ? activeToolClass : toolClass}
-            onClick={() => setDrawingMode("text")}
-          >
-            <IconAlphabetLatin />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="clear screen" showArrow placement="right">
-          <button
-            className="px-2 py-1 rounded-md bg-white border border-red-700 hover:bg-red-700 text-red-700 hover:text-white hover:border-transparent mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[1.97] hover:scale-125"
-            onClick={handleClearDrawing}
-          >
-            <IconSquareRoundedX />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="save" showArrow placement="right">
-          <button
-            className="px-2 py-1 rounded-md bg-purple-700 text-white mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[0.90] hover:scale-125"
-            onClick={handleSaveDrawing}
-          >
-            <IconDeviceFloppy />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="download" showArrow placement="right">
-          <button
-            className="px-2 py-1 rounded-md bg-purple-700 text-white mx-5 hover:bg-opacity-80 transition-all duration-300 active:scale-[0.90] hover:scale-125"
-            onClick={handleExportDrawing}
-          >
-            <IconDownload />
-          </button>
-        </Tooltip>
-      </div> */}
     </div>
   );
 }
+
+const EditableText = ({
+  text,
+  index,
+  onUpdateText,
+  isShiftPressed,
+  drawingMode,
+  moveStart,
+  moveHandler,
+  moveEnd,
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newText, setNewText] = useState(text.text);
+  const inputRef = useRef(null);
+  const [isEnterPressed, setIsEnterPressed] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = event => {
+      if (event.key === "Enter") {
+        setIsEnterPressed(true);
+      }
+    };
+
+    const handleKeyUp = event => {
+      if (event.key === "Enter") {
+        setIsEnterPressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  const handleDblClick = e => {
+    setIsEditing(true);
+    // inputRef?.current?.focus();
+    console.log(inputRef);
+    // e?.target.focus();
+    console.log(e);
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    onUpdateText(text, index, newText);
+    console.log([text, index, newText]);
+  };
+
+  const handleChange = e => {
+    setNewText(e.target.value);
+  };
+  // console.log(isEditing);
+  // console.log(text);
+
+  return (
+    <Group>
+      <Text
+        x={text.x}
+        y={text.y}
+        text={isEditing ? newText : text.text}
+        fontSize={text.fontSize}
+        fontFamily="Kalam"
+        fill={isEditing ? "transparent" : "white"}
+        draggable={drawingMode === "drag"}
+        onDblClick={e => handleDblClick(e)}
+        onDragStart={e => moveStart(text)}
+        onDragMove={e => moveHandler(e, text, index)}
+        onDragEnd={e => moveEnd(e, text)}
+      />
+      <Html>
+        {isEditing && (
+          <textarea
+            ref={inputRef}
+            type="text"
+            value={newText}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            autoFocus
+            style={{
+              position: "absolute",
+              top: text.y - 16,
+              left: text.x - 3,
+              fontSize: text.fontSize,
+              fontFamily: "Kalam",
+              color: "green",
+              padding: 2,
+              border: "1px solid black",
+              zIndex: 3000,
+              background: "transparent",
+            }}
+            className="resize min-w-max h-14"
+          />
+        )}
+      </Html>
+    </Group>
+  );
+};
+
+const TextInput = ({ x, y, width, height, value, onChange, onBlur }) => {
+  return (
+    <Group>
+      <Rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill="white"
+        opacity={0.5}
+      />
+      <Text
+        x={x}
+        y={y}
+        text={value}
+        fontSize={24}
+        fontFamily="Kalam"
+        fill="black"
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        style={{
+          position: "absolute",
+          top: y,
+          left: x,
+          width,
+          height,
+          fontSize: 24,
+          fontFamily: "Kalam",
+          padding: 2,
+          border: "1px solid black",
+        }}
+      />
+    </Group>
+  );
+};
 
 export default Whiteboard;

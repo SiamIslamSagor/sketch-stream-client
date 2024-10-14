@@ -21,4 +21,5 @@
  * shortcut keys
  * erase
  * selection
+ * history
  */

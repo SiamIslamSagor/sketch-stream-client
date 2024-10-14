@@ -145,6 +145,7 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
               type="text"
               name="name"
               id="name"
+              autoFocus={true}
             />
           </div>
         )}
