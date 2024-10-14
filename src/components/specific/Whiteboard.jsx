@@ -1,31 +1,16 @@
-import { activeToolClass, toolClass } from "@/constant/constant";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
 import { handleInputChange } from "@/lib/features";
-import { Button, drip, Tooltip } from "@nextui-org/react";
+import { Button, Tooltip } from "@nextui-org/react";
 import {
-  IconAlphabetLatin,
-  IconArrowLeft,
   IconArrowsMove,
-  IconArrowsMoveVertical,
   IconCircle,
-  IconCursorOff,
-  IconCursorText,
   IconDeviceFloppy,
   IconDownload,
-  IconHandGrab,
-  IconMenu,
-  IconMouse,
-  IconPencilMinus,
+  IconPencil,
   IconPointer,
   IconRectangle,
   IconSettings,
-  IconSettingsAutomation,
-  IconSettingsBolt,
-  IconSettingsCheck,
-  IconSettingsCode,
-  IconSignature,
-  IconSquare,
   IconSquareRoundedX,
   IconTypography,
   IconUser,
@@ -173,6 +158,7 @@ function Whiteboard() {
   }, [handleResize]);
 
   const handleMouseDown = () => {
+    console.log("mouse down");
     if (isShiftPressed || drawingMode === "drag") return; // Ignore drawing if Shift is pressed or drawing mode is drag
 
     const stage = stageRef.current;
@@ -531,67 +517,153 @@ function Whiteboard() {
 
   const tools = [
     {
-      name: "pointer",
+      name: "cursor (c)",
       mode: "pointer",
       icon: IconPointer,
     },
     {
-      name: "freehand",
+      name: "freehand (p)",
       mode: "freehand",
-      icon: IconSignature,
+      icon: IconPencil,
     },
     {
-      name: "straight line",
+      name: "line (l)",
       mode: "straightLine",
-      icon: IconPencilMinus,
+      el: <div className="w-6 h-[3px] bg-white rounded-full" />,
     },
     {
-      name: "rectangle",
+      name: "rectangle (r)",
       mode: "rectangle",
       icon: IconRectangle,
     },
     {
-      name: "ellipse",
+      name: "ellipse (e)",
       mode: "ellipse",
       icon: IconCircle,
     },
     {
-      name: "arrow",
+      name: "arrow (a)",
       mode: "arrow",
-      icon: IconArrowLeft,
+      el: (
+        <svg
+          stroke="currentColor"
+          fill="currentColor"
+          strokeWidth="0"
+          viewBox="0 0 448 512"
+          height="1.5em"
+          width="1.5em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M134.059 296H436c6.627 0 12-5.373 12-12v-56c0-6.627-5.373-12-12-12H134.059v-46.059c0-21.382-25.851-32.09-40.971-16.971L7.029 239.029c-9.373 9.373-9.373 24.569 0 33.941l86.059 86.059c15.119 15.119 40.971 4.411 40.971-16.971V296z"></path>
+        </svg>
+      ),
     },
     {
-      name: "move",
-      mode: "drag",
-      icon: IconArrowsMove,
-    },
-    {
-      name: "text",
+      name: "text (t)",
       mode: "text",
       icon: IconTypography,
     },
     {
-      name: "clear screen",
+      name: "move (shift+move)",
+      mode: "drag",
+      icon: IconArrowsMove,
+    },
+    {
+      name: "clear screen (ctrl+backspace)",
       mode: "cls",
       icon: IconSquareRoundedX,
       handler: handleClearDrawing,
     },
     {
-      name: "save",
+      name: "save (ctrl+s)",
       mode: "save",
       icon: IconDeviceFloppy,
       handler: handleSaveDrawing,
     },
     {
-      name: "download",
+      name: "download (ctrl+d)",
       mode: "download",
       icon: IconDownload,
       handler: handleExportDrawing,
     },
   ];
 
+  const handleKeyDown = useCallback(
+    event => {
+      const { key, ctrlKey, shiftKey } = event;
+      const isSpecial = ctrlKey || shiftKey;
+      const shortcutKey = key.toLowerCase();
+
+      // console.time("timer");
+
+      const drawingShortcuts = {
+        c: "pointer",
+        p: "freehand",
+        l: "straightLine",
+        r: "rectangle",
+        e: "ellipse",
+        a: "arrow",
+        t: "text",
+      };
+
+      const specialShortcuts = {
+        d: handleExportDrawing,
+        backspace: handleClearDrawing,
+        s: handleSaveDrawing,
+        ",": () => setIsSettingsOpen(true),
+        p: () => setIsProfileOpen(true),
+      };
+
+      // Handle drawing mode change
+      if (
+        !isSpecial &&
+        drawingShortcuts[shortcutKey] &&
+        drawingMode !== drawingShortcuts[shortcutKey]
+      ) {
+        setDrawingMode(drawingShortcuts[shortcutKey]);
+      }
+
+      // Handle special key combinations (Ctrl + key)
+      if (isSpecial && ctrlKey && specialShortcuts[shortcutKey]) {
+        event.preventDefault();
+        specialShortcuts[shortcutKey]();
+      }
+
+      // console.timeEnd("timer");
+    },
+    [
+      drawingMode,
+      setDrawingMode,
+      handleExportDrawing,
+      handleClearDrawing,
+      handleSaveDrawing,
+      setIsSettingsOpen,
+      setIsProfileOpen,
+    ]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  // console.log(drawingMode);
+
   return (
-    <div className="w-full flex flex-row-reverse items-center justify-evenly h-screen bg-[#121212] relative overflow-auto cursor-====kjgrab">
+    <div
+      className={`w-full flex flex-row-reverse items-center justify-evenly h-screen bg-[#121212] relative overflow-auto ${
+        drawingMode === "pointer"
+          ? "cursor-default"
+          : drawingMode === "drag"
+          ? "cursor-move"
+          : drawingMode === "text"
+          ? "cursor-text"
+          : "cursor-crosshair"
+      }`}
+    >
       <div
         hidden={!isSettingsOpen}
         onClick={() => setIsSettingsOpen(false)}
@@ -608,10 +680,13 @@ function Whiteboard() {
         } `}
       >
         <Tooltip
-          content="settings"
+          content="settings (ctrl+,)"
           showArrow
           placement="bottom"
           color="foreground"
+          style={{
+            fontFamily: "monospace",
+          }}
         >
           <div
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -691,6 +766,9 @@ function Whiteboard() {
                 showArrow
                 placement="bottom"
                 color="foreground"
+                style={{
+                  fontFamily: "monospace",
+                }}
               >
                 <div
                   onClick={() => {
@@ -714,7 +792,13 @@ function Whiteboard() {
                     "bg-[#32a852] hover:bg-[#32a852]"
                   }`}
                 >
-                  {<tool.icon />}
+                  {tool?.icon ? (
+                    <tool.icon />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      {tool?.el}
+                    </div>
+                  )}
                 </div>
               </Tooltip>
             );
@@ -723,7 +807,15 @@ function Whiteboard() {
 
         <div className="w-[1px] h-5 bg-neutral-200 mx-2" />
 
-        <Tooltip content="me" showArrow placement="bottom" color="foreground">
+        <Tooltip
+          content="me (ctrl+p)"
+          showArrow
+          placement="bottom"
+          color="foreground"
+          style={{
+            fontFamily: "monospace",
+          }}
+        >
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className={`p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition ${
@@ -749,6 +841,12 @@ function Whiteboard() {
               </h4>
               <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
                 third option
+              </h4>
+              <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                fourth option
+              </h4>
+              <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                fifth option
               </h4>
               <Button className="relative w-full flex justify-center border border-transparent text-sm font-medium rounded-none text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   active:scale-100 duration-300 disabled:opacity-60 uppercase focus:ring-0">
                 sign in
