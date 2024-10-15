@@ -1,19 +1,24 @@
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
 import { Spinner } from "@nextui-org/react";
-import axios from "axios";
+import { IconCamera, IconEye, IconEyeClosed } from "@tabler/icons-react";
 import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 
 const AuthForm = ({ setIsAuthOpen }) => {
   const { setUser } = useContextData();
   const [formType, setFormType] = useState("signin");
   const [isLoading, setIsLoading] = useState(false);
+  const [photoURL, setPhotoURL] = useState(
+    "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"
+  );
 
   const axiosPublic = useAxiosPublic();
-  const navigate = useNavigate();
 
+  const handlePhotoChange = e => {
+    console.log(e.target.files);
+    setPhotoURL(URL.createObjectURL(e.target.files[0]));
+  };
   const handleSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
@@ -27,6 +32,7 @@ const AuthForm = ({ setIsAuthOpen }) => {
       name,
       username,
       password,
+      photoURL,
     };
 
     console.log(data);
@@ -107,6 +113,8 @@ const AuthForm = ({ setIsAuthOpen }) => {
               handleSubmit={handleSubmit}
               formType={formType}
               isLoading={isLoading}
+              photoURL={photoURL}
+              handlePhoto={handlePhotoChange}
             />
           </div>
           <div className="px-8 py-4  text-center">
@@ -128,19 +136,49 @@ const AuthForm = ({ setIsAuthOpen }) => {
   );
 };
 
-const Form = ({ handleSubmit, formType, isLoading }) => {
+const Form = ({
+  handleSubmit,
+  formType,
+  isLoading,
+  photoURL = "",
+  handlePhoto,
+}) => {
   const [isPassShow, setIsPassShow] = useState(false);
   return (
     <form onSubmit={e => handleSubmit(e)} className="mt-8 space-y-6">
       <div className="rounded-md shadow-sm">
         {formType === "signin" || (
-          <div>
+          <div className="flex items-center justify-center">
+            <label className="sr-only" htmlFor="name">
+              Your photo
+            </label>
+
+            <div className="relative">
+              <div className="size-28 rounded-full  bg-[#292828] relative text-neutral-200 ">
+                <div className="overflow-hidden rounded-full size-full">
+                  <img src={photoURL} alt="photo" className="size-full" />
+                  <input
+                    placeholder="Your photo"
+                    className="w-full  absolute size-full z-10 bg-blue-400 opacity-0 top-0 cursor-not-allowed pointer-events-none"
+                    type="file"
+                    name="photo"
+                    id="photo"
+                    onChange={e => handlePhoto(e)}
+                  />
+                </div>
+                <IconCamera className="absolute right-1 bottom-1 mix-blend-difference" />
+              </div>
+            </div>
+          </div>
+        )}
+        {formType === "signin" || (
+          <div className="mt-6">
             <label className="sr-only" htmlFor="name">
               Your name
             </label>
             <input
               placeholder="Your name"
-              className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-purple-500 focus:border-white focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
+              className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-400 focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
               required={true}
               type="text"
               name="name"
@@ -155,7 +193,7 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
           </label>
           <input
             placeholder="Username"
-            className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-purple-500 focus:border-white focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
+            className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-400 focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
             required={true}
             type="text"
             name="username"
@@ -163,27 +201,37 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
             defaultValue={"siam09"}
           />
         </div>
-        <div className="mt-4">
+        <div className="mt-4 relative">
           <label className="sr-only" htmlFor="password">
             Password
           </label>
           <input
             placeholder="Password"
-            className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-purple-500 focus:border-white focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
+            className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-400 focus:z-10 max-sm:text-sm tracking-widest bg-[#292828] pr-10"
             required={true}
-            type="password"
+            type={isPassShow ? "text" : "password"}
             name="password"
             id="password"
             defaultValue={"pass"}
           />
-          {}
+          {isPassShow ? (
+            <IconEye
+              onClick={() => setIsPassShow(false)}
+              className="absolute right-2 text-neutral-400 top-[10px] z-[500]"
+            />
+          ) : (
+            <IconEyeClosed
+              onClick={() => setIsPassShow(true)}
+              className="absolute right-2 text-neutral-400 top-[10px] z-[500]"
+            />
+          )}
         </div>
       </div>
 
       <div>
         <button
           disabled={isLoading}
-          className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 active:scale-95 duration-300 disabled:opacity-60 tracking-widest"
+          className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   focus:ring-offset-2 focus:ring-1 focus:ring-neutral-600 active:scale-95 duration-300 disabled:opacity-60 tracking-widest"
           type="submit"
         >
           {isLoading ? (

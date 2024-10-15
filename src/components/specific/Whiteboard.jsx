@@ -1,7 +1,7 @@
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
 import { handleInputChange } from "@/lib/features";
-import { Button, Tooltip } from "@nextui-org/react";
+import { Avatar, Button, Tooltip } from "@nextui-org/react";
 import {
   IconArrowsMove,
   IconCircle,
@@ -34,6 +34,7 @@ import AuthModal from "../auth/AuthModal";
 function Whiteboard() {
   const {
     user,
+    logOut,
     stroke,
     setStroke,
     color,
@@ -45,7 +46,7 @@ function Whiteboard() {
   } = useContextData();
   const axiosPublic = useAxiosPublic();
 
-  // console.log(user);
+  console.log(user);
   // console.log(stroke, color, fillColor);
 
   const [deviceSize, setDeviceSize] = useState(false);
@@ -114,10 +115,10 @@ function Whiteboard() {
       const windowHeight = window.innerHeight;
       const isInTop20 = clientY < windowHeight * 0.27;
       if (isInTop20 && !inTop20) {
-        console.log("Cursor entered the top 20% of the window");
+        // console.log("Cursor entered the top 20% of the window");
         setInTop20(true);
       } else if (!isInTop20 && inTop20) {
-        console.log("Cursor left the top 20% of the window");
+        // console.log("Cursor left the top 20% of the window");
         setInTop20(false);
         // setIsSettingsOpen(false);
         // setIsProfileOpen(false);
@@ -666,16 +667,8 @@ function Whiteboard() {
           : "cursor-crosshair"
       }`}
     >
-      {/* {isAuthOpen && <AuthModal setIsAuthOpen={setIsAuthOpen} />} */}
+      {isAuthOpen && <AuthModal setIsAuthOpen={setIsAuthOpen} />}
 
-      <div
-        className={`${
-          isAuthOpen ? "scale-100 opacity-100" : "scale-0 opacity-50"
-        } absolute w-full min-h-screen bg-lue-800 z-[500] duration-300`}
-        // className=""
-      >
-        <AuthModal setIsAuthOpen={setIsAuthOpen} />
-      </div>
       <div
         hidden={!isSettingsOpen}
         onClick={() => setIsSettingsOpen(false)}
@@ -833,11 +826,11 @@ function Whiteboard() {
         >
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className={`p-2 cursor-pointer hover:bg-neutral-600 rounded-lg transition ${
+            className={`cursor-pointer hover:bg-neutral-600 rounded-lg transition ${
               isProfileOpen && "bg-neutral-600"
-            }`}
+            } ${user ? "p-1" : "p-2"}`}
           >
-            <IconUser />
+            {user ? <Avatar size="sm" /> : <IconUser />}
           </div>
         </Tooltip>
 
@@ -848,11 +841,27 @@ function Whiteboard() {
         >
           <div className="">
             <div className="capitalize divide-y-1 divide-neutral-600">
+              {user && (
+                <div className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition pointer-events-none">
+                  <div className="flex gap-2">
+                    <div className=" ">
+                      <Avatar
+                        src={user?.photoURL}
+                        alt="user photo"
+                        className=""
+                      />
+                    </div>
+                    <div>
+                      <h1 className="text-lg tracking-tighter">{user?.name}</h1>
+                      <p className="text-sm tracking-widest">
+                        @{user?.username}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
-                first option
-              </h4>
-              <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
-                second option
+                saved drawings
               </h4>
               <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
                 third option
@@ -863,12 +872,21 @@ function Whiteboard() {
               <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
                 fifth option
               </h4>
-              <Button
-                onClick={() => setIsAuthOpen(!isAuthOpen)}
-                className="relative w-full flex justify-center border border-transparent text-sm font-medium rounded-none text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   active:scale-100 duration-300 disabled:opacity-60 uppercase focus:ring-0"
-              >
-                sign in
-              </Button>
+              {user ? (
+                <Button
+                  onClick={logOut}
+                  className="relative w-full flex justify-center border border-transparent text-sm font-medium rounded-none text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   active:scale-100 duration-300 disabled:opacity-60 uppercase focus:ring-0"
+                >
+                  Log out
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setIsAuthOpen(!isAuthOpen)}
+                  className="relative w-full flex justify-center border border-transparent text-sm font-medium rounded-none text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   active:scale-100 duration-300 disabled:opacity-60 uppercase focus:ring-0"
+                >
+                  sign in
+                </Button>
+              )}
             </div>
           </div>
         </div>
