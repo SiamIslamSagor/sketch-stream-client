@@ -6,7 +6,7 @@ import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
-const AuthForm = () => {
+const AuthForm = ({ setIsAuthOpen }) => {
   const { setUser } = useContextData();
   const [formType, setFormType] = useState("signin");
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +52,7 @@ const AuthForm = () => {
           toast.success("Account created successfully.", {
             id: toastId,
           });
-          navigate("/");
+          setIsAuthOpen(false);
         }
       } catch (error) {
         console.log(error);
@@ -75,11 +75,10 @@ const AuthForm = () => {
               setUser(null);
             });
 
-          navigate("/");
-          toast.success("Account created successfully.", {
+          toast.success("sign in successfully.", {
             id: toastId,
           });
-          navigate("/");
+          setIsAuthOpen(false);
         }
       } catch (error) {
         console.log(error);
@@ -91,15 +90,15 @@ const AuthForm = () => {
   };
 
   return (
-    <div className="w-full h-screen flex items-center justify-center">
+    <div className="w-full h-screen flex items-center justify-center text-white cursor-default">
       <Toaster />
-      <div className="max-w-sm w-full border rounded-2xl">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="max-w-sm w-full border border-neutral-600 rounded-2xl z-[9999999]">
+        <div className="bg-[#121212] rounded-2xl shadow-xl overflow-hidden">
           <div className="p-8">
             <h2 className="text-center text-3xl font-extrabold">
               {formType === "signin" ? "Welcome Back" : "SketchStream"}
             </h2>
-            <p className="mt-4 text-center text-gray-600">
+            <p className="mt-2 text-center text-neutral-400 text-">
               {formType === "signin"
                 ? "Sign in to continue"
                 : "Sign up to continue"}
@@ -111,7 +110,7 @@ const AuthForm = () => {
             />
           </div>
           <div className="px-8 py-4  text-center">
-            <span className="text-gray-400">
+            <span className="text-neutral-400 text-">
               {formType === "signin" && "Don't "}have an account?{" "}
             </span>
             <span
@@ -130,6 +129,7 @@ const AuthForm = () => {
 };
 
 const Form = ({ handleSubmit, formType, isLoading }) => {
+  const [isPassShow, setIsPassShow] = useState(false);
   return (
     <form onSubmit={e => handleSubmit(e)} className="mt-8 space-y-6">
       <div className="rounded-md shadow-sm">
@@ -140,7 +140,7 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
             </label>
             <input
               placeholder="Your name"
-              className="appearance-none relative block w-full px-3 py-3 border   rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
+              className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-purple-500 focus:border-white focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
               required={true}
               type="text"
               name="name"
@@ -155,7 +155,7 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
           </label>
           <input
             placeholder="Username"
-            className="appearance-none relative block w-full px-3 py-3 border   rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
+            className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-purple-500 focus:border-white focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
             required={true}
             type="text"
             name="username"
@@ -169,20 +169,21 @@ const Form = ({ handleSubmit, formType, isLoading }) => {
           </label>
           <input
             placeholder="Password"
-            className="appearance-none relative block w-full px-3 py-3 border   rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
+            className="appearance-none relative block w-full px-3 py-3 rounded-md focus:outline-none focus:ring-purple-500 focus:border-white focus:z-10 max-sm:text-sm tracking-widest bg-[#292828]"
             required={true}
             type="password"
             name="password"
             id="password"
             defaultValue={"pass"}
           />
+          {}
         </div>
       </div>
 
       <div>
         <button
           disabled={isLoading}
-          className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 active:scale-95 duration-300 disabled:opacity-60"
+          className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 active:scale-95 duration-300 disabled:opacity-60 tracking-widest"
           type="submit"
         >
           {isLoading ? (

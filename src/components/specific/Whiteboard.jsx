@@ -29,6 +29,7 @@ import {
   Text,
 } from "react-konva";
 import { Html } from "react-konva-utils";
+import AuthModal from "../auth/AuthModal";
 
 function Whiteboard() {
   const {
@@ -52,6 +53,7 @@ function Whiteboard() {
   const [inTop20, setInTop20] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const [lines, setLines] = useState([]);
   const [straightLines, setStraightLines] = useState([]);
@@ -664,6 +666,16 @@ function Whiteboard() {
           : "cursor-crosshair"
       }`}
     >
+      {/* {isAuthOpen && <AuthModal setIsAuthOpen={setIsAuthOpen} />} */}
+
+      <div
+        className={`${
+          isAuthOpen ? "scale-100 opacity-100" : "scale-0 opacity-50"
+        } absolute w-full min-h-screen bg-lue-800 z-[500] duration-300`}
+        // className=""
+      >
+        <AuthModal setIsAuthOpen={setIsAuthOpen} />
+      </div>
       <div
         hidden={!isSettingsOpen}
         onClick={() => setIsSettingsOpen(false)}
@@ -675,8 +687,9 @@ function Whiteboard() {
         className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
       />
       <div
-        className={`absolute text-white smax-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center duration-300 ${
-          inTop20 ? "top-5" : "-top-16"
+        className={`absolute text-white max-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center duration-300 delay-1000 ${
+          // inTop20 ? "top-5" : "-top-16"
+          "top-5"
         } `}
       >
         <Tooltip
@@ -694,7 +707,9 @@ function Whiteboard() {
               isSettingsOpen && "bg-neutral-600"
             }`}
           >
-            <IconSettings />
+            <IconSettings
+              className={`duration-300 ${isSettingsOpen && "rotate-45"}`}
+            />
           </div>
         </Tooltip>
 
@@ -848,7 +863,10 @@ function Whiteboard() {
               <h4 className="p-2 px-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
                 fifth option
               </h4>
-              <Button className="relative w-full flex justify-center border border-transparent text-sm font-medium rounded-none text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   active:scale-100 duration-300 disabled:opacity-60 uppercase focus:ring-0">
+              <Button
+                onClick={() => setIsAuthOpen(!isAuthOpen)}
+                className="relative w-full flex justify-center border border-transparent text-sm font-medium rounded-none text-white bg-purple-500 hover:bg-purple-600 focus:outline-none   active:scale-100 duration-300 disabled:opacity-60 uppercase focus:ring-0"
+              >
                 sign in
               </Button>
             </div>
