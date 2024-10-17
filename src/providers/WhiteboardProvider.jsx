@@ -6,10 +6,15 @@ export const WhiteboardContext = createContext(null);
 
 const WhiteboardProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+
   const [stroke, setStroke] = useState(5);
   const [color, setColor] = useState("#32a852");
+
   const [fillColor, setFillColor] = useState("#32a852");
   const [isFill, setIsFill] = useState(false);
+
+  const [fontSize, setFontSize] = useState(32);
+  const [fontColor, setFontColor] = useState("#ffffff");
 
   const axiosPublic = useAxiosPublic();
 
@@ -40,6 +45,10 @@ const WhiteboardProvider = ({ children }) => {
     setFillColor,
     isFill,
     setIsFill,
+    fontColor,
+    setFontColor,
+    fontSize,
+    setFontSize,
     user,
     setUser,
     logOut,

@@ -7,6 +7,7 @@ import {
   IconCircle,
   IconDeviceFloppy,
   IconDownload,
+  IconEraser,
   IconPencil,
   IconPointer,
   IconRectangle,
@@ -30,6 +31,7 @@ import {
 } from "react-konva";
 import { Html } from "react-konva-utils";
 import AuthModal from "../auth/AuthModal";
+import { cn } from "@/lib/utils";
 
 function Whiteboard() {
   const {
@@ -43,10 +45,14 @@ function Whiteboard() {
     isFill,
     setIsFill,
     setFillColor,
+    fontSize,
+    setFontSize,
+    fontColor,
+    setFontColor,
   } = useContextData();
   const axiosPublic = useAxiosPublic();
 
-  console.log(user);
+  // console.log(user);
   // console.log(stroke, color, fillColor);
 
   const [deviceSize, setDeviceSize] = useState(false);
@@ -64,6 +70,7 @@ function Whiteboard() {
   const [arrows, setArrows] = useState([]);
   const [squares, setSquares] = useState([]);
   const [texts, setTexts] = useState([]);
+  const [eraseAreas, setEraseAreas] = useState([]);
 
   /*   console.log({
     lines,
@@ -174,7 +181,8 @@ function Whiteboard() {
         x: pointerPosition.x,
         y: pointerPosition.y,
         text: "Double Click to edit",
-        fontSize: 36,
+        fontSize,
+        fill: fontColor,
         draggable: true,
       };
       setTexts([...texts, newText]);
@@ -264,11 +272,23 @@ function Whiteboard() {
         strokeWidth: stroke,
         lineCap: "round",
         lineJoin: "round",
+        closed: isFill,
+        fill: fillColor,
         // dash: [33, 10], // dashed line with a length of 33px and a gap of 10px
         tension: 0.5, // smoothness of the line
       });
       layer?.add(line);
       setLines([...lines, line]);
+    } else if (drawingMode === "erase") {
+      const shape = layer?.getIntersection({
+        x: pointerPosition.x,
+        y: pointerPosition.y,
+      });
+      console.log(shape);
+      if (shape) {
+        shape?.destroy();
+        layer?.draw(); // Redraw the layer to reflect changes
+      }
     }
   };
 
@@ -353,6 +373,16 @@ function Whiteboard() {
         // replace last
         lines.splice(lines.length - 1, 1, lastLine);
         setLines(lines.concat());
+      } else if (drawingMode === "erase") {
+        const shape = layer?.getIntersection({
+          x: pointerPosition.x,
+          y: pointerPosition.y,
+        });
+
+        if (shape) {
+          shape?.destroy();
+          layer?.draw(); // Redraw the layer to reflect changes
+        }
       }
     }
   };
@@ -485,14 +515,12 @@ function Whiteboard() {
 
   const handleExportDrawing = () => {
     const stage = stageRef.current;
-    const dataURL = stage.toDataURL({
-      mimeType: "image/png",
-      quality: 1,
-    });
+    const dataURL = stage.toDataURL({ pixelRatio: 3 });
     const link = document.createElement("a");
     link.href = dataURL;
     link.download = "drawing.png";
     link.click();
+    document.body.removeChild(link);
   };
 
   const handleClearDrawing = () => {
@@ -567,6 +595,11 @@ function Whiteboard() {
       icon: IconTypography,
     },
     {
+      name: "eraser (e)",
+      mode: "eraser",
+      icon: IconEraser,
+    },
+    {
       name: "move (shift+move)",
       mode: "drag",
       icon: IconArrowsMove,
@@ -600,13 +633,14 @@ function Whiteboard() {
       // console.time("timer");
 
       const drawingShortcuts = {
-        c: "pointer",
+        v: "pointer",
         p: "freehand",
         l: "straightLine",
         r: "rectangle",
-        e: "ellipse",
+        c: "ellipse",
         a: "arrow",
         t: "text",
+        e: "erase",
       };
 
       const specialShortcuts = {
@@ -654,7 +688,7 @@ function Whiteboard() {
   }, [handleKeyDown]);
 
   // console.log(drawingMode);
-
+  // console.log(isStrokeChanging);
   return (
     <div
       className={`w-full flex flex-row-reverse items-center justify-evenly h-screen bg-[#121212] relative overflow-auto ${
@@ -673,14 +707,44 @@ function Whiteboard() {
         hidden={!isSettingsOpen}
         onClick={() => setIsSettingsOpen(false)}
         className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
-      />
+      >
+        {drawingMode === "freehand" && (
+          <div
+            className={cn(
+              "rounded-full size-10 duration-150  bg-green-500 absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+            )}
+            style={{
+              height: stroke,
+              width: stroke,
+              backgroundColor: color,
+            }}
+          />
+        )}
+        {drawingMode === "text" && (
+          <div
+            className={cn(
+              "rounded-full duration-150 absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+            )}
+          >
+            <h1
+              style={{
+                fontSize,
+                color: fontColor,
+              }}
+            >
+              Aa
+            </h1>
+          </div>
+        )}
+      </div>
+
       <div
         hidden={!isProfileOpen}
         onClick={() => setIsProfileOpen(false)}
         className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
       />
       <div
-        className={`absolute text-white max-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center duration-300 delay-1000 ${
+        className={`fixed text-white max-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center duration-300 delay-1000 ${
           // inTop20 ? "top-5" : "-top-16"
           "top-5"
         } `}
@@ -759,6 +823,28 @@ function Whiteboard() {
                 title="Choose your color"
               />
             </div>
+            <div className="flex items-center justify-between gap-2">
+              <label className="w-min">Font Size</label>
+              <input
+                type="number"
+                min="16"
+                max="1000"
+                value={fontSize}
+                onChange={e => handleInputChange(e, setFontSize, 16, 1000)}
+                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
+              />
+            </div>{" "}
+            <div className="flex items-center justify-between gap-2">
+              <label className="w-min">Font Color</label>
+              <input
+                type="color"
+                value={fontColor}
+                onChange={e => setFontColor(e.target.value)}
+                className="p-1 h-10 w-10 bg-neutral-700 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none"
+                id="hs-color-input"
+                title="Choose your color"
+              />
+            </div>
           </div>
         </div>
 
@@ -766,7 +852,6 @@ function Whiteboard() {
 
         <div className="flex overflow-x-auto  gap-2 sm:gap-5">
           {tools.map(tool => {
-            // console.log(tool.name);
             return (
               <Tooltip
                 key={tool.name}
@@ -893,18 +978,8 @@ function Whiteboard() {
       </div>
       <Stage
         ref={stageRef}
-        /* width={
-          deviceSize === "max-sm"
-            ? window.innerWidth - 50
-            window.innerWidth - 300
-        }
-        height={
-          deviceSize === "max-sm"
-            ? window.innerHeight - 80
-            : window.innerHeight - 180
-        } */
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={window.innerWidth - 4}
+        height={window.innerHeight * 5}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -924,6 +999,8 @@ function Whiteboard() {
                 lineJoin="round"
                 dash={line.dash()}
                 tension={line.tension()}
+                fill={line.fill()}
+                closed={line.closed()}
                 draggable={false}
               />
             );
@@ -1030,31 +1107,6 @@ function Whiteboard() {
             );
           })}
 
-          {/* {texts.map((text, index) => (
-            <Text
-              key={index}
-              x={text.x}
-              y={text.y}
-              text={text.text}
-              fontSize={text.fontSize}
-              fontFamily="Kalam"
-              fill="white"
-              draggable={isShiftPressed}
-              onDblClick={() => handleUpdateText(text, index)}
-              onDblTap={() => handleUpdateText(text, index)}
-              onDragEnd={e => {
-                const updatedTexts = texts.slice();
-                updatedTexts[index] = {
-                  ...text,
-                  x: e.target.x(),
-                  y: e.target.y(),
-                };
-                setTexts(updatedTexts);
-                console.log(texts);
-              }}
-            />
-          ))} */}
-
           {texts.map((text, index) => (
             <EditableText
               key={index}
@@ -1062,10 +1114,10 @@ function Whiteboard() {
               index={index}
               drawingMode={drawingMode}
               onUpdateText={handleUpdateText}
-              isShiftPressed={isShiftPressed}
               moveStart={handleMoveTextStart}
               moveHandler={handleMoveText}
               moveEnd={handleMoveTextEnd}
+              fontSize={fontSize}
             />
           ))}
         </Layer>
@@ -1078,16 +1130,16 @@ const EditableText = ({
   text,
   index,
   onUpdateText,
-  isShiftPressed,
   drawingMode,
   moveStart,
   moveHandler,
   moveEnd,
+  fontSize = 16,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newText, setNewText] = useState(text.text);
   const inputRef = useRef(null);
-  const [isEnterPressed, setIsEnterPressed] = useState(false);
+  const textRef = useRef(null);
 
   useEffect(() => {
     const handleKeyDown = event => {
@@ -1113,38 +1165,35 @@ const EditableText = ({
 
   const handleDblClick = e => {
     setIsEditing(true);
-    // inputRef?.current?.focus();
-    console.log(inputRef);
-    // e?.target.focus();
-    console.log(e);
   };
 
   const handleBlur = () => {
     setIsEditing(false);
     onUpdateText(text, index, newText);
-    console.log([text, index, newText]);
   };
 
   const handleChange = e => {
     setNewText(e.target.value);
   };
-  // console.log(isEditing);
-  // console.log(text);
-
+  console.log(text);
   return (
     <Group>
       <Text
+        ref={textRef}
         x={text.x}
-        y={text.y}
+        y={text.y - 11}
+        width={window.innerWidth - (text.x + fontSize)}
         text={isEditing ? newText : text.text}
         fontSize={text.fontSize}
         fontFamily="Kalam"
-        fill={isEditing ? "transparent" : "white"}
+        fill={isEditing ? "transparent" : text.fill}
         draggable={drawingMode === "drag"}
         onDblClick={e => handleDblClick(e)}
         onDragStart={e => moveStart(text)}
         onDragMove={e => moveHandler(e, text, index)}
         onDragEnd={e => moveEnd(e, text)}
+        lineHeight={1.5}
+        wrap="word"
       />
       <Html>
         {isEditing && (
@@ -1155,62 +1204,33 @@ const EditableText = ({
             onChange={handleChange}
             onBlur={handleBlur}
             autoFocus
+            onInput={e => {
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
+            onFocus={e => {
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
+            onMouseEnter={() => {
+              if (inputRef.current) {
+                inputRef.current.select();
+              }
+            }}
             style={{
+              width: window.innerWidth - (text.x + fontSize),
               position: "absolute",
               top: text.y - 16,
               left: text.x - 3,
               fontSize: text.fontSize,
               fontFamily: "Kalam",
-              color: "green",
+              color: "white",
               padding: 2,
-              border: "1px solid black",
               zIndex: 3000,
               background: "transparent",
             }}
-            className="resize min-w-max h-14"
+            className="resize-none border-none outline-none focus:outline-none"
           />
         )}
       </Html>
-    </Group>
-  );
-};
-
-const TextInput = ({ x, y, width, height, value, onChange, onBlur }) => {
-  return (
-    <Group>
-      <Rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill="white"
-        opacity={0.5}
-      />
-      <Text
-        x={x}
-        y={y}
-        text={value}
-        fontSize={24}
-        fontFamily="Kalam"
-        fill="black"
-      />
-      <input
-        type="text"
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        style={{
-          position: "absolute",
-          top: y,
-          left: x,
-          width,
-          height,
-          fontSize: 24,
-          fontFamily: "Kalam",
-          padding: 2,
-          border: "1px solid black",
-        }}
-      />
     </Group>
   );
 };
