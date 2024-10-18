@@ -32,6 +32,7 @@ import {
 import { Html } from "react-konva-utils";
 import AuthModal from "../auth/AuthModal";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 
 function Whiteboard() {
   const {
@@ -56,7 +57,8 @@ function Whiteboard() {
   // console.log(stroke, color, fillColor);
 
   const [deviceSize, setDeviceSize] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ x: 100, y: 200 });
   const [inTop20, setInTop20] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -70,7 +72,6 @@ function Whiteboard() {
   const [arrows, setArrows] = useState([]);
   const [squares, setSquares] = useState([]);
   const [texts, setTexts] = useState([]);
-  const [eraseAreas, setEraseAreas] = useState([]);
 
   /*   console.log({
     lines,
@@ -168,7 +169,7 @@ function Whiteboard() {
   }, [handleResize]);
 
   const handleMouseDown = () => {
-    console.log("mouse down");
+    // console.log("mouse down");
     if (isShiftPressed || drawingMode === "drag") return; // Ignore drawing if Shift is pressed or drawing mode is drag
 
     const stage = stageRef.current;
@@ -265,7 +266,7 @@ function Whiteboard() {
       });
       layer?.add(arrow);
       setArrows([...arrows, arrow]);
-    } else if (drawingMode === "freehand") {
+    } else if (drawingMode === "freehand" || drawingMode === "erase") {
       const line = new Konva.Line({
         points: [pointerPosition.x, pointerPosition.y],
         stroke: color,
@@ -276,23 +277,15 @@ function Whiteboard() {
         fill: fillColor,
         // dash: [33, 10], // dashed line with a length of 33px and a gap of 10px
         tension: 0.5, // smoothness of the line
+        globalCompositeOperation:
+          drawingMode === "erase" ? "destination-out" : "source-over",
       });
       layer?.add(line);
       setLines([...lines, line]);
-    } else if (drawingMode === "erase") {
-      const shape = layer?.getIntersection({
-        x: pointerPosition.x,
-        y: pointerPosition.y,
-      });
-      console.log(shape);
-      if (shape) {
-        shape?.destroy();
-        layer?.draw(); // Redraw the layer to reflect changes
-      }
     }
   };
 
-  const handleMouseMove = () => {
+  const handleMouseMove = e => {
     if (!drawing || isShiftPressed) return; // Ignore drawing if not active or Shift is pressed
 
     const stage = stageRef.current;
@@ -364,7 +357,7 @@ function Whiteboard() {
         layer?.batchDraw();
         // replace last
         setArrows(arrows.concat());
-      } else if (drawingMode === "freehand") {
+      } else if (drawingMode === "freehand" || drawingMode === "erase") {
         const lastLine = lines[lines.length - 1];
         lastLine.points(
           lastLine.points().concat([pointerPosition.x, pointerPosition.y])
@@ -373,16 +366,6 @@ function Whiteboard() {
         // replace last
         lines.splice(lines.length - 1, 1, lastLine);
         setLines(lines.concat());
-      } else if (drawingMode === "erase") {
-        const shape = layer?.getIntersection({
-          x: pointerPosition.x,
-          y: pointerPosition.y,
-        });
-
-        if (shape) {
-          shape?.destroy();
-          layer?.draw(); // Redraw the layer to reflect changes
-        }
       }
     }
   };
@@ -487,8 +470,9 @@ function Whiteboard() {
   const handleMouseUp = () => {
     setDrawing(false);
     const isNotFH = drawingMode !== "freehand";
+    const isNotER = drawingMode !== "erase";
     const isNotDG = drawingMode !== "drag";
-    if (isNotFH && isNotDG) setDrawingMode("pointer");
+    if (isNotFH && isNotDG && isNotER) setDrawingMode("pointer");
 
     setStartPoint(null);
   };
@@ -548,14 +532,39 @@ function Whiteboard() {
 
   const tools = [
     {
-      name: "cursor (c)",
+      name: "cursor (v)",
       mode: "pointer",
       icon: IconPointer,
     },
     {
-      name: "freehand (p)",
+      name: "pencil (p)",
       mode: "freehand",
-      icon: IconPencil,
+      // icon: IconPencil,
+      el: (
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M20.07 3.456a3.135 3.135 0 0 0-4.434 0L10.25 8.843a3.38 3.38 0 0 0-.884 1.55l-.845 3.292c-.205.8.522 1.527 1.322 1.323l3.278-.837a3.384 3.384 0 0 0 1.555-.886L20.07 7.89a3.135 3.135 0 0 0 0-4.434Zm-2.117 4.43 1.057-1.057a1.635 1.635 0 0 0-2.313-2.313l-1.056 1.057 2.312 2.312Zm-1.166 1.166-3.172 3.172c-.24.24-.539.41-.866.493l-2.602.665.67-2.616a1.88 1.88 0 0 1 .492-.862l3.165-3.164 2.313 2.312Z"
+            fill="currentColor"
+          ></path>
+          <path
+            d="M5.144 15.022a.641.641 0 1 0 0 1.282h13.751a2.109 2.109 0 0 1 0 4.218H9.194a.75.75 0 0 1 0-1.5h9.701a.609.609 0 1 0 0-1.218H5.144a2.141 2.141 0 0 1 0-4.282h1.862v1.5H5.144Z"
+            fill="currentColor"
+          ></path>
+        </svg>
+      ),
+    },
+    {
+      name: "eraser (e)",
+      mode: "erase",
+      icon: IconEraser,
     },
     {
       name: "line (l)",
@@ -568,7 +577,7 @@ function Whiteboard() {
       icon: IconRectangle,
     },
     {
-      name: "ellipse (e)",
+      name: "ellipse (c)",
       mode: "ellipse",
       icon: IconCircle,
     },
@@ -593,11 +602,6 @@ function Whiteboard() {
       name: "text (t)",
       mode: "text",
       icon: IconTypography,
-    },
-    {
-      name: "eraser (e)",
-      mode: "eraser",
-      icon: IconEraser,
     },
     {
       name: "move (shift+move)",
@@ -687,10 +691,11 @@ function Whiteboard() {
     };
   }, [handleKeyDown]);
 
-  // console.log(drawingMode);
+  console.log(rectangles);
   // console.log(isStrokeChanging);
   return (
     <div
+      // onContextMenu={e => setIsMenuOpen(false)}
       className={`w-full flex flex-row-reverse items-center justify-evenly h-screen bg-[#121212] relative overflow-auto ${
         drawingMode === "pointer"
           ? "cursor-default"
@@ -702,6 +707,113 @@ function Whiteboard() {
       }`}
     >
       {isAuthOpen && <AuthModal setIsAuthOpen={setIsAuthOpen} />}
+
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 20,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              exit={{
+                opacity: 0,
+                y: 20,
+              }}
+              transition={{ duration: 0.15 }}
+              className={`absolute bg-[#292828]   max-w-72 min-w-72 rounded-lg overflow-hidden duration-300 z-[55] text-white`}
+              style={{
+                top: menuPosition.y,
+                left: menuPosition.x,
+              }}
+            >
+              <div className="">
+                <div className="capitalize divide-y-1 divide-neutral-600">
+                  <h4 className="flex items- gap-2 font-mono p-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12.75 5.82v8.43a.75.75 0 1 1-1.5 0V5.81L8.99 8.07A.75.75 0 1 1 7.93 7l2.83-2.83a1.75 1.75 0 0 1 2.47 0L16.06 7A.75.75 0 0 1 15 8.07l-2.25-2.25zM15 10.48l6.18 3.04a1 1 0 0 1 0 1.79l-7.86 3.86a3 3 0 0 1-2.64 0l-7.86-3.86a1 1 0 0 1 0-1.8L9 10.49v1.67L4.4 14.4l6.94 3.42c.42.2.9.2 1.32 0l6.94-3.42-4.6-2.26v-1.67z"
+                      ></path>
+                    </svg>{" "}
+                    send to up
+                  </h4>
+                  <h4 className="flex items- gap-2 font-mono p-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12.75 3.82v9.43a.75.75 0 1 1-1.5 0V3.81L8.99 6.07A.75.75 0 1 1 7.93 5l2.83-2.83a1.75 1.75 0 0 1 2.47 0L16.06 5A.75.75 0 0 1 15 6.07l-2.25-2.25zM15 8.48l6.18 3.04a1 1 0 0 1 0 1.79l-7.86 3.86a3 3 0 0 1-2.64 0l-7.86-3.86a1 1 0 0 1 0-1.8L9 8.49v1.67L4.4 12.4l6.94 3.42c.42.2.9.2 1.32 0l6.94-3.42-4.6-2.26V8.48zm4.48 7.34 1.7.83a1 1 0 0 1 0 1.8l-7.86 3.86a3 3 0 0 1-2.64 0l-7.86-3.86a1 1 0 0 1 0-1.8l1.7-.83 1.7.83-1.82.9 6.94 3.41c.42.2.9.2 1.32 0l6.94-3.41-1.82-.9 1.7-.83z"
+                      ></path>
+                    </svg>{" "}
+                    send to front{" "}
+                  </h4>
+                  <h4 className="flex items- gap-2 font-mono p-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12.75 18.12V9.75a.75.75 0 1 0-1.5 0v8.37l-2.26-2.25a.75.75 0 0 0-1.06 1.06l2.83 2.82c.68.69 1.79.69 2.47 0l2.83-2.82A.75.75 0 0 0 15 15.87l-2.25 2.25zM15 11.85v1.67l6.18-3.04a1 1 0 0 0 0-1.79l-7.86-3.86a3 3 0 0 0-2.64 0L2.82 8.69a1 1 0 0 0 0 1.8L9 13.51v-1.67L4.4 9.6l6.94-3.42c.42-.2.9-.2 1.32 0L19.6 9.6 15 11.85z"
+                      ></path>
+                    </svg>{" "}
+                    send to down
+                  </h4>
+                  <h4 className="flex items- gap-2 font-mono p-4 w-full hover:bg-neutral-700 cursor-pointer transition ">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="m19.48 10.82 1.7.83a1 1 0 0 1 0 1.8L15 16.49V14.8l4.6-2.26-1.82-.9 1.7-.83zm-14.96 0-1.7.83a1 1 0 0 0 0 1.8L9 16.49V14.8l-4.6-2.26 1.82-.9-1.7-.83zm8.23 9.5L15 18.07a.75.75 0 0 1 1.06 1.06l-2.83 2.83c-.68.68-1.79.68-2.47 0l-2.83-2.83a.75.75 0 0 1 1.06-1.06l2.26 2.26V6.9a.75.75 0 1 1 1.5 0v13.43zM15 11.35V9.68l4.6-2.27L12.66 4c-.42-.2-.9-.2-1.32 0L4.4 7.4 9 9.68v1.67L2.82 8.3a1 1 0 0 1 0-1.8l7.86-3.86a3 3 0 0 1 2.64 0l7.86 3.87a1 1 0 0 1 0 1.79L15 11.35z"
+                      ></path>
+                    </svg>{" "}
+                    send to back{" "}
+                  </h4>
+                  <h4 className="flex items- gap-2 font-mono p-4 w-full hover:bg-red-100 hover:bg-opacity-90 hover:text-red-700 cursor-pointer transition ">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M8 5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3h4.25a.75.75 0 1 1 0 1.5H19V18a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V6.5H3.75a.75.75 0 0 1 0-1.5H8zM6.5 6.5V18c0 .83.67 1.5 1.5 1.5h8c.83 0 1.5-.67 1.5-1.5V6.5h-11zm3-1.5h5c0-.83-.67-1.5-1.5-1.5h-2c-.83 0-1.5.67-1.5 1.5zm-.25 4h1.5v8h-1.5V9zm4 0h1.5v8h-1.5V9z"
+                      ></path>
+                    </svg>
+                    delete drawing{" "}
+                  </h4>
+                </div>
+              </div>
+            </motion.div>
+            <div
+              hidden={!isMenuOpen}
+              onClick={() => setIsMenuOpen(false)}
+              className="absolute w-full h-screen z-50 bg-blue700"
+            ></div>
+          </>
+        )}{" "}
+      </AnimatePresence>
 
       <div
         hidden={!isSettingsOpen}
@@ -741,10 +853,10 @@ function Whiteboard() {
       <div
         hidden={!isProfileOpen}
         onClick={() => setIsProfileOpen(false)}
-        className="absolute w-full h-screen z-50 bg-opacity-10 backdrop-blur-md"
+        className="absolute w-full h-screen z-[500] bg-opacity-10 backdrop-blur-md"
       />
       <div
-        className={`fixed text-white max-sm:w-[90%] max-md:w-[85%] mx-2 z-50 py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center duration-300 delay-1000 ${
+        className={`fixed text-white max-sm:w-[90%] max-md:w-[85%] mx-2 z-[500000] py-1 md:py-3 px-2 sm:px-4 rounded-md bg-[#292828] flex items-center duration-300 delay-1000 ${
           // inTop20 ? "top-5" : "-top-16"
           "top-5"
         } `}
@@ -764,9 +876,10 @@ function Whiteboard() {
               isSettingsOpen && "bg-neutral-600"
             }`}
           >
-            <IconSettings
+            {/* <IconSettings
               className={`duration-300 ${isSettingsOpen && "rotate-45"}`}
-            />
+            /> */}
+            {rectangles.length}
           </div>
         </Tooltip>
 
@@ -1002,6 +1115,7 @@ function Whiteboard() {
                 fill={line.fill()}
                 closed={line.closed()}
                 draggable={false}
+                globalCompositeOperation={line.globalCompositeOperation()}
               />
             );
           })}
@@ -1021,9 +1135,67 @@ function Whiteboard() {
                 onDragStart={() => handleDragStart(rect)}
                 onDragMove={e => handleDragMove(rect, e)}
                 onDragEnd={e => handleDragEnd(rect, e)}
+                onContextMenu={e => {
+                  setIsMenuOpen(true);
+                  /*   setMenuPosition({
+                    x: e?.evt.clientX,
+                    y: e?.evt.clientY,
+                  }); */
+
+                  // e.target.destroy();
+                  // console.log(e);
+                  // console.log(e?.evt.clientX);
+                  // console.log(window.innerWidth - e?.evt.clientX >= 288);
+                  // console.log("X:", e?.evt.clientX, "Y:", e?.evt.clientY);
+                  const rightSpace = window.innerWidth - e?.evt.clientX;
+                  const isLeftSpaceAvailable =
+                    window.innerWidth - rightSpace >= 288;
+                  const isRightSpaceAvailable =
+                    window.innerWidth - e?.evt.clientX >= 288;
+
+                  if (isRightSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (isLeftSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (
+                    !isRightSpaceAvailable &&
+                    !isLeftSpaceAvailable &&
+                    window.innerWidth < 580
+                  ) {
+                    setMenuPosition({
+                      x: window.innerWidth / 2 - 144,
+                      y: e?.evt.clientY,
+                    });
+                  } else {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  }
+
+                  // console.log(index);
+
+                  // setRectangles(prevRectangles =>
+                  //   prevRectangles.filter((_, idx) => idx !== index)
+                  // );
+
+                  // const restShape = rectangles.filter(rect => {
+                  //   console.log(rect._id, e.target._id);
+                  //   return rect._id !== e.target._id - 1;
+                  // });
+                  // setRectangles(restShape);
+                  // console.log(rectangles);
+                }}
               />
             );
           })}
+
           {circles.map((circle, index) => {
             return (
               <Circle
@@ -1041,6 +1213,7 @@ function Whiteboard() {
               />
             );
           })}
+
           {squares.map((square, index) => {
             return (
               <Rect
@@ -1059,6 +1232,7 @@ function Whiteboard() {
               />
             );
           })}
+
           {ellipses.map((ellipse, index) => {
             return (
               <Ellipse

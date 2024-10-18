@@ -31,7 +31,9 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <NextUIProvider>
       <WhiteboardProvider>
-        <RouterProvider router={router} />
+        <div onContextMenu={e => e.preventDefault()}>
+          <RouterProvider router={router} />
+        </div>
       </WhiteboardProvider>
     </NextUIProvider>
   </StrictMode>
