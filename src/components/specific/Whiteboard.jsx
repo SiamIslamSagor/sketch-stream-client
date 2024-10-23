@@ -504,7 +504,7 @@ function Whiteboard() {
       const shapes = stageRef.current.find(
         ".circle, .rect, .line, .text, .arrow"
       );
-      console.log(shapes);
+      // console.log(shapes);
       const box = selectionRectRef?.current.getClientRect();
 
       const selected = shapes.filter(shape =>
@@ -563,14 +563,15 @@ function Whiteboard() {
   };
 
   const handleStgClick = e => {
-    if (selectionRect.visible) {
-      return; // If we are selecting with rect, do nothing
-    }
-
-    if (e.target === stageRef.current) {
+    if (e.target.getClassName() === "Stage") {
       setIsMenuOpen(false);
+      // next line not working
       transformerRef.current.nodes([]); // Deselect all shapes
       return;
+    }
+
+    if (selectionRect.visible) {
+      return; // If we are selecting with rect, do nothing
     }
 
     const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey;
@@ -1183,38 +1184,9 @@ function Whiteboard() {
                 closed={line.closed()}
                 draggable={false}
                 globalCompositeOperation={line.globalCompositeOperation()}
-              />
-            );
-          })}
-
-          {rectangles.map((rect, index) => {
-            return (
-              <Rect
-                key={index}
-                name="rect"
-                x={rect.x()}
-                y={rect.y()}
-                width={rect.width()}
-                height={rect.height()}
-                fill={rect.fill()}
-                stroke={rect.stroke()}
-                strokeWidth={rect.strokeWidth()}
-                draggable={drawingMode === "drag"}
-                onDragStart={() => handleDragStart(rect)}
-                onDragMove={e => handleDragMove(rect, e)}
-                onDragEnd={e => handleDragEnd(rect, e)}
                 onContextMenu={e => {
                   setIsMenuOpen(true);
-                  /*   setMenuPosition({
-                    x: e?.evt.clientX,
-                    y: e?.evt.clientY,
-                  }); */
 
-                  // e.target.destroy();
-                  // console.log(e);
-                  // console.log(e?.evt.clientX);
-                  // console.log(window.innerWidth - e?.evt.clientX >= 288);
-                  // console.log("X:", e?.evt.clientX, "Y:", e?.evt.clientY);
                   const rightSpace = window.innerWidth - e?.evt.clientX;
                   const isLeftSpaceAvailable =
                     window.innerWidth - rightSpace >= 288;
@@ -1246,9 +1218,61 @@ function Whiteboard() {
                       y: e?.evt.clientY,
                     });
                   }
+                }}
+              />
+            );
+          })}
 
-                  console.log(e.target);
-                  console.log(e.target._id);
+          {rectangles.map((rect, index) => {
+            return (
+              <Rect
+                key={index}
+                name="rect"
+                x={rect.x()}
+                y={rect.y()}
+                width={rect.width()}
+                height={rect.height()}
+                fill={rect.fill()}
+                stroke={rect.stroke()}
+                strokeWidth={rect.strokeWidth()}
+                draggable={drawingMode === "drag"}
+                onDragStart={() => handleDragStart(rect)}
+                onDragMove={e => handleDragMove(rect, e)}
+                onDragEnd={e => handleDragEnd(rect, e)}
+                onContextMenu={e => {
+                  setIsMenuOpen(true);
+
+                  const rightSpace = window.innerWidth - e?.evt.clientX;
+                  const isLeftSpaceAvailable =
+                    window.innerWidth - rightSpace >= 288;
+                  const isRightSpaceAvailable =
+                    window.innerWidth - e?.evt.clientX >= 288;
+
+                  if (isRightSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (isLeftSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (
+                    !isRightSpaceAvailable &&
+                    !isLeftSpaceAvailable &&
+                    window.innerWidth < 580
+                  ) {
+                    setMenuPosition({
+                      x: window.innerWidth / 2 - 144,
+                      y: e?.evt.clientY,
+                    });
+                  } else {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  }
                 }}
               />
             );
@@ -1309,6 +1333,41 @@ function Whiteboard() {
                 onDragStart={() => handleDragStart(ellipse)}
                 onDragMove={e => handleDragMove(ellipse, e)}
                 onDragEnd={e => handleDragEnd(ellipse, e)}
+                onContextMenu={e => {
+                  setIsMenuOpen(true);
+
+                  const rightSpace = window.innerWidth - e?.evt.clientX;
+                  const isLeftSpaceAvailable =
+                    window.innerWidth - rightSpace >= 288;
+                  const isRightSpaceAvailable =
+                    window.innerWidth - e?.evt.clientX >= 288;
+
+                  if (isRightSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (isLeftSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (
+                    !isRightSpaceAvailable &&
+                    !isLeftSpaceAvailable &&
+                    window.innerWidth < 580
+                  ) {
+                    setMenuPosition({
+                      x: window.innerWidth / 2 - 144,
+                      y: e?.evt.clientY,
+                    });
+                  } else {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  }
+                }}
               />
             );
           })}
@@ -1325,6 +1384,41 @@ function Whiteboard() {
                 stroke={arrow.stroke()}
                 strokeWidth={arrow.strokeWidth()}
                 draggable={false}
+                onContextMenu={e => {
+                  setIsMenuOpen(true);
+
+                  const rightSpace = window.innerWidth - e?.evt.clientX;
+                  const isLeftSpaceAvailable =
+                    window.innerWidth - rightSpace >= 288;
+                  const isRightSpaceAvailable =
+                    window.innerWidth - e?.evt.clientX >= 288;
+
+                  if (isRightSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (isLeftSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (
+                    !isRightSpaceAvailable &&
+                    !isLeftSpaceAvailable &&
+                    window.innerWidth < 580
+                  ) {
+                    setMenuPosition({
+                      x: window.innerWidth / 2 - 144,
+                      y: e?.evt.clientY,
+                    });
+                  } else {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  }
+                }}
               />
             );
           })}
@@ -1340,6 +1434,41 @@ function Whiteboard() {
                 lineCap="round"
                 lineJoin="round"
                 draggable={false}
+                onContextMenu={e => {
+                  setIsMenuOpen(true);
+
+                  const rightSpace = window.innerWidth - e?.evt.clientX;
+                  const isLeftSpaceAvailable =
+                    window.innerWidth - rightSpace >= 288;
+                  const isRightSpaceAvailable =
+                    window.innerWidth - e?.evt.clientX >= 288;
+
+                  if (isRightSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (isLeftSpaceAvailable) {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  } else if (
+                    !isRightSpaceAvailable &&
+                    !isLeftSpaceAvailable &&
+                    window.innerWidth < 580
+                  ) {
+                    setMenuPosition({
+                      x: window.innerWidth / 2 - 144,
+                      y: e?.evt.clientY,
+                    });
+                  } else {
+                    setMenuPosition({
+                      x: e?.evt.clientX - 288,
+                      y: e?.evt.clientY,
+                    });
+                  }
+                }}
               />
             );
           })}
@@ -1356,6 +1485,8 @@ function Whiteboard() {
               moveHandler={handleMoveText}
               moveEnd={handleMoveTextEnd}
               fontSize={fontSize}
+              setIsMenuOpen={setIsMenuOpen}
+              setMenuPosition={setMenuPosition}
             />
           ))}
 
@@ -1419,6 +1550,8 @@ const EditableText = ({
   moveHandler,
   moveEnd,
   fontSize = 16,
+  setIsMenuOpen,
+  setMenuPosition,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newText, setNewText] = useState(text.text);
@@ -1479,6 +1612,40 @@ const EditableText = ({
         onDragEnd={e => moveEnd(e, text)}
         lineHeight={1.5}
         wrap="word"
+        onContextMenu={e => {
+          setIsMenuOpen(true);
+
+          const rightSpace = window.innerWidth - e?.evt.clientX;
+          const isLeftSpaceAvailable = window.innerWidth - rightSpace >= 288;
+          const isRightSpaceAvailable =
+            window.innerWidth - e?.evt.clientX >= 288;
+
+          if (isRightSpaceAvailable) {
+            setMenuPosition({
+              x: e?.evt.clientX,
+              y: e?.evt.clientY,
+            });
+          } else if (isLeftSpaceAvailable) {
+            setMenuPosition({
+              x: e?.evt.clientX - 288,
+              y: e?.evt.clientY,
+            });
+          } else if (
+            !isRightSpaceAvailable &&
+            !isLeftSpaceAvailable &&
+            window.innerWidth < 580
+          ) {
+            setMenuPosition({
+              x: window.innerWidth / 2 - 144,
+              y: e?.evt.clientY,
+            });
+          } else {
+            setMenuPosition({
+              x: e?.evt.clientX - 288,
+              y: e?.evt.clientY,
+            });
+          }
+        }}
       />
       <Html>
         {isEditing && (
