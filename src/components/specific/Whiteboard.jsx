@@ -1,6 +1,7 @@
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useContextData from "@/hooks/useContextData";
 import { handleInputChange } from "@/lib/features";
+import { cn } from "@/lib/utils";
 import { Avatar, Button, Tooltip } from "@nextui-org/react";
 import {
   IconArrowsMove,
@@ -8,7 +9,6 @@ import {
   IconDeviceFloppy,
   IconDownload,
   IconEraser,
-  IconPencil,
   IconPointer,
   IconRectangle,
   IconSettings,
@@ -16,11 +16,11 @@ import {
   IconTypography,
   IconUser,
 } from "@tabler/icons-react";
+import { AnimatePresence, motion } from "framer-motion";
 import Konva from "konva";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Arrow,
-  Circle,
   Ellipse,
   Group,
   Layer,
@@ -28,11 +28,10 @@ import {
   Rect,
   Stage,
   Text,
+  Transformer,
 } from "react-konva";
 import { Html } from "react-konva-utils";
 import AuthModal from "../auth/AuthModal";
-import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
 
 function Whiteboard() {
   const {
@@ -73,6 +72,16 @@ function Whiteboard() {
   const [squares, setSquares] = useState([]);
   const [texts, setTexts] = useState([]);
 
+  const [selectionRect, setSelectionRect] = useState({
+    visible: false,
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0,
+  });
+
+  // const [selectedNode, setSelectedNode] = useState(null);
+
   /*   console.log({
     lines,
     straightLines,
@@ -89,6 +98,9 @@ function Whiteboard() {
 
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
+  const transformerRef = useRef(null);
+  const selectionRectRef = useRef(null);
+
   const [drawingMode, setDrawingMode] = useState("freehand");
   const [startPoint, setStartPoint] = useState(null);
 
@@ -123,13 +135,9 @@ function Whiteboard() {
       const windowHeight = window.innerHeight;
       const isInTop20 = clientY < windowHeight * 0.27;
       if (isInTop20 && !inTop20) {
-        // console.log("Cursor entered the top 20% of the window");
         setInTop20(true);
       } else if (!isInTop20 && inTop20) {
-        // console.log("Cursor left the top 20% of the window");
         setInTop20(false);
-        // setIsSettingsOpen(false);
-        // setIsProfileOpen(false);
       }
     };
 
@@ -142,7 +150,6 @@ function Whiteboard() {
   }, [inTop20]);
 
   const handleResize = useCallback(() => {
-    // console.log("resizing");
     const width = window.innerWidth;
 
     if (width >= 1280) {
@@ -168,7 +175,22 @@ function Whiteboard() {
     };
   }, [handleResize]);
 
-  const handleMouseDown = () => {
+  const handleMouseDown = e => {
+    if (drawingMode === "pointer") {
+      if (e.target !== e.target.getStage()) {
+        return;
+      }
+      e.evt.preventDefault();
+      const { x, y } = stageRef.current.getPointerPosition();
+      setSelectionRect({
+        visible: true,
+        x1: x,
+        y1: y,
+        x2: x,
+        y2: y,
+      });
+    }
+
     // console.log("mouse down");
     if (isShiftPressed || drawingMode === "drag") return; // Ignore drawing if Shift is pressed or drawing mode is drag
 
@@ -190,6 +212,8 @@ function Whiteboard() {
     } else if (drawingMode === "straightLine") {
       setStartPoint(pointerPosition);
       const line = new Konva.Line({
+        x: pointerPosition.x,
+        y: pointerPosition.y,
         points: [
           pointerPosition.x,
           pointerPosition.y,
@@ -268,6 +292,8 @@ function Whiteboard() {
       setArrows([...arrows, arrow]);
     } else if (drawingMode === "freehand" || drawingMode === "erase") {
       const line = new Konva.Line({
+        x: pointerPosition.x,
+        y: pointerPosition.y,
         points: [pointerPosition.x, pointerPosition.y],
         stroke: color,
         strokeWidth: stroke,
@@ -286,6 +312,19 @@ function Whiteboard() {
   };
 
   const handleMouseMove = e => {
+    if (drawingMode === "pointer") {
+      if (!selectionRect.visible) {
+        return;
+      }
+      e.evt.preventDefault();
+      const { x, y } = stageRef.current.getPointerPosition();
+      setSelectionRect(prev => ({
+        ...prev,
+        x2: x,
+        y2: y,
+      }));
+    }
+
     if (!drawing || isShiftPressed) return; // Ignore drawing if not active or Shift is pressed
 
     const stage = stageRef.current;
@@ -410,19 +449,6 @@ function Whiteboard() {
       updatedTexts[index] = { ...text, text: newText };
       setTexts(updatedTexts);
     }
-    /* const newText = prompt("Edit text:", text.text);
-    if (newText !== null) {
-      const updatedTexts = [...texts];
-      updatedTexts[index] = { ...text, text: newText };
-      setTexts(updatedTexts);
-    } */
-
-    /* const newText = prompt("Edit text:", text.text);
-    if (newText !== null) {
-      const updatedTexts = [...texts];
-      updatedTexts[index] = { ...text, text: newText };
-      setTexts(updatedTexts);
-    } */
   };
 
   const handleMoveTextStart = text => {
@@ -467,14 +493,32 @@ function Whiteboard() {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = e => {
     setDrawing(false);
-    const isNotFH = drawingMode !== "freehand";
-    const isNotER = drawingMode !== "erase";
-    const isNotDG = drawingMode !== "drag";
-    if (isNotFH && isNotDG && isNotER) setDrawingMode("pointer");
-
     setStartPoint(null);
+    if (drawingMode === "pointer") {
+      if (!selectionRect.visible) {
+        return;
+      }
+      e.evt.preventDefault();
+      const shapes = stageRef.current.find(
+        ".circle, .rect, .line, .text, .arrow"
+      );
+      console.log(shapes);
+      const box = selectionRectRef?.current.getClientRect();
+
+      const selected = shapes.filter(shape =>
+        Konva.Util.haveIntersection(box, shape.getClientRect())
+      );
+
+      transformerRef.current.nodes(selected);
+      setSelectionRect({ visible: false, x1: 0, y1: 0, x2: 0, y2: 0 });
+    } else {
+      const isNotFH = drawingMode !== "freehand";
+      const isNotER = drawingMode !== "erase";
+      const isNotDG = drawingMode !== "drag";
+      if (isNotFH && isNotDG && isNotER) setDrawingMode("pointer");
+    }
   };
 
   const handleSaveDrawing = async () => {
@@ -516,6 +560,32 @@ function Whiteboard() {
     setArrows([]);
     setStraightLines([]);
     setTexts([]);
+  };
+
+  const handleStgClick = e => {
+    if (selectionRect.visible) {
+      return; // If we are selecting with rect, do nothing
+    }
+
+    if (e.target === stageRef.current) {
+      setIsMenuOpen(false);
+      transformerRef.current.nodes([]); // Deselect all shapes
+      return;
+    }
+
+    const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey;
+    const isSelected = transformerRef.current.nodes().indexOf(e.target) >= 0;
+
+    if (!metaPressed && !isSelected) {
+      transformerRef.current.nodes([e.target]); // Select just one
+    } else if (metaPressed && isSelected) {
+      const nodes = transformerRef.current.nodes().slice();
+      nodes.splice(nodes.indexOf(e.target), 1); // Remove node from selection
+      transformerRef.current.nodes(nodes);
+    } else if (metaPressed && !isSelected) {
+      const nodes = transformerRef.current.nodes().concat([e.target]); // Add the node into selection
+      transformerRef.current.nodes(nodes);
+    }
   };
 
   // console.log(drawing);
@@ -691,7 +761,8 @@ function Whiteboard() {
     };
   }, [handleKeyDown]);
 
-  console.log(rectangles);
+  // console.log(lines);
+
   // console.log(isStrokeChanging);
   return (
     <div
@@ -806,11 +877,6 @@ function Whiteboard() {
                 </div>
               </div>
             </motion.div>
-            <div
-              hidden={!isMenuOpen}
-              onClick={() => setIsMenuOpen(false)}
-              className="absolute w-full h-screen z-50 bg-blue700"
-            ></div>
           </>
         )}{" "}
       </AnimatePresence>
@@ -876,10 +942,9 @@ function Whiteboard() {
               isSettingsOpen && "bg-neutral-600"
             }`}
           >
-            {/* <IconSettings
+            <IconSettings
               className={`duration-300 ${isSettingsOpen && "rotate-45"}`}
-            /> */}
-            {rectangles.length}
+            />
           </div>
         </Tooltip>
 
@@ -1099,12 +1164,14 @@ function Whiteboard() {
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
+        onClick={handleStgClick}
       >
         <Layer ref={canvasRef}>
           {lines.map((line, index) => {
             return (
               <Line
                 key={index}
+                name="line"
                 points={line.points()}
                 stroke={line.stroke()}
                 strokeWidth={line.strokeWidth()}
@@ -1124,6 +1191,7 @@ function Whiteboard() {
             return (
               <Rect
                 key={index}
+                name="rect"
                 x={rect.x()}
                 y={rect.y()}
                 width={rect.width()}
@@ -1179,24 +1247,14 @@ function Whiteboard() {
                     });
                   }
 
-                  // console.log(index);
-
-                  // setRectangles(prevRectangles =>
-                  //   prevRectangles.filter((_, idx) => idx !== index)
-                  // );
-
-                  // const restShape = rectangles.filter(rect => {
-                  //   console.log(rect._id, e.target._id);
-                  //   return rect._id !== e.target._id - 1;
-                  // });
-                  // setRectangles(restShape);
-                  // console.log(rectangles);
+                  console.log(e.target);
+                  console.log(e.target._id);
                 }}
               />
             );
           })}
 
-          {circles.map((circle, index) => {
+          {/* {circles.map((circle, index) => {
             return (
               <Circle
                 key={index}
@@ -1210,6 +1268,7 @@ function Whiteboard() {
                 onDragStart={() => handleDragStart(circle)}
                 onDragMove={e => handleDragMove(circle, e)}
                 onDragEnd={e => handleDragEnd(circle, e)}
+                
               />
             );
           })}
@@ -1229,14 +1288,16 @@ function Whiteboard() {
                 onDragStart={() => handleDragStart(square)}
                 onDragMove={e => handleDragMove(square, e)}
                 onDragEnd={e => handleDragEnd(square, e)}
+                
               />
             );
-          })}
+          })} */}
 
           {ellipses.map((ellipse, index) => {
             return (
               <Ellipse
                 key={index}
+                name="circle"
                 x={ellipse.x()}
                 y={ellipse.y()}
                 radiusX={ellipse.radiusX()}
@@ -1256,6 +1317,7 @@ function Whiteboard() {
             return (
               <Arrow
                 key={index}
+                name="arrow"
                 points={arrow.points()}
                 pointerLength={arrow.pointerLength()}
                 pointerWidth={arrow.pointerWidth()}
@@ -1271,6 +1333,7 @@ function Whiteboard() {
             return (
               <Line
                 key={index}
+                name="line"
                 points={line.points()}
                 stroke={line.stroke()}
                 strokeWidth={line.strokeWidth()}
@@ -1284,6 +1347,7 @@ function Whiteboard() {
           {texts.map((text, index) => (
             <EditableText
               key={index}
+              name="text"
               text={text}
               index={index}
               drawingMode={drawingMode}
@@ -1294,6 +1358,51 @@ function Whiteboard() {
               fontSize={fontSize}
             />
           ))}
+
+          <Rect
+            ref={selectionRectRef}
+            visible={selectionRect.visible}
+            x={Math.min(selectionRect.x1, selectionRect.x2)}
+            y={Math.min(selectionRect.y1, selectionRect.y2)}
+            width={Math.abs(selectionRect.x2 - selectionRect.x1)}
+            height={Math.abs(selectionRect.y2 - selectionRect.y1)}
+            fill="rgba(56, 56, 56, 0.1)"
+            stroke="#A3A9DC"
+          />
+          <Transformer
+            ref={transformerRef}
+            anchorStyleFunc={anchor => {
+              anchor.cornerRadius(10);
+              if (
+                anchor.hasName("top-center") ||
+                anchor.hasName("bottom-center")
+              ) {
+                anchor.height(6);
+                anchor.offsetY(3);
+                anchor.width(30);
+                anchor.offsetX(15);
+              }
+              if (
+                anchor.hasName("middle-left") ||
+                anchor.hasName("middle-right")
+              ) {
+                anchor.height(30);
+                anchor.offsetY(15);
+                anchor.width(6);
+                anchor.offsetX(3);
+              }
+            }}
+            ignoreStroke={true}
+            keepRatio={true}
+            centeredScaling={true}
+            rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+            rotationSnapTolerance={8}
+            borderStroke="#A3A9DC"
+            anchorStroke="#A3A9DC"
+            anchorFill="#A3A9DC"
+            anchorSize={15}
+            flipEnabled={false}
+          />
         </Layer>
       </Stage>
     </div>
@@ -1302,6 +1411,7 @@ function Whiteboard() {
 
 const EditableText = ({
   text,
+  name = "text",
   index,
   onUpdateText,
   drawingMode,
@@ -1354,6 +1464,7 @@ const EditableText = ({
     <Group>
       <Text
         ref={textRef}
+        name={name}
         x={text.x}
         y={text.y - 11}
         width={window.innerWidth - (text.x + fontSize)}
